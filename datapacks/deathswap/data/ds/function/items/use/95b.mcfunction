@@ -1,10 +1,14 @@
-$execute as @p[scores={permPNo=$(s)}] at @s run function ds:items/misc/parkour_civ
+$execute as @p[scores={permPNo=$(s)}] at @s run function ds:items/misc/parkour_civ {ly:"0",uy:"127"}
+$execute as @p[scores={permPNo=$(s)}] at @s run function ds:items/misc/parkour_civ {ly:"-63",uy:"317"}
+
 $execute as @p[scores={permPNo=$(s)}] at @s run fill ~26 -63 ~26 ~-26 -63 ~-26 minecraft:water
 #$execute as @p[scores={permPNo=$(s)}] at @s run fill ~1 ~-1 ~1 ~-1 ~-1 ~-1 quartz_bricks replace air
 $execute as @p[scores={permPNo=$(s)}] at @s run fill ~1 ~ ~1 ~1 ~ ~-1 minecraft:iron_bars replace air
 $execute as @p[scores={permPNo=$(s)}] at @s run fill ~-1 ~ ~1 ~-1 ~ ~-1 minecraft:iron_bars replace air
 $execute as @p[scores={permPNo=$(s)}] at @s run fill ~ ~ ~1 ~ ~ ~1 minecraft:iron_bars replace air
 $execute as @p[scores={permPNo=$(s)}] at @s run fill ~ ~ ~-1 ~ ~ ~-1 minecraft:iron_bars replace air
+
+effect clear @a minecraft:night_vision
 
 $tellraw @a [{"text":">> ","color":"green"},{"selector":"@s","bold":false}," --> ",{"text":"Spawned ","color":"green"},{"selector":"@p[scores={permPNo=$(s)}]","bold":false},{"text":" inside of Parkour Civilization (the Youtube series)","color":"green"}]
 $execute as @p[scores={permPNo=$(s)}] at @s run playsound minecraft:entity.enderman.teleport master @s ~ ~ ~ 99 1.6

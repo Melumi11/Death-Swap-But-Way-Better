@@ -14,6 +14,8 @@ execute if score Lang Core matches 1 run tellraw @s [{"bold":true,"click_event":
 
 execute if score Lang Core matches 2 run tellraw @s [{"bold":false,"click_event":{"action":"run_command","command":"trigger 96spying"},"color":"gold","text":"\n >>> [点击此处退出间谍模式!] <<<"},{"bold":false,"color":"green","italic":true,"text":"\n或者在聊天框中输入 "},{"bold":false,"color":"yellow","italic":true,"text":"/trigger 96spying"},{"bold":false,"color":"green","italic":true,"text":" 返回!\n"}]
 
+effect clear @a minecraft:night_vision
+
 ## $tellraw @a [{"text":">> ","color":"green"},{"selector":"@s","bold":false}," --> ",{"text":"Spawned ","color":"green"},{"selector":"@p[scores={permPNo=$(s)}]","bold":false},{"text":" inside of Parkour Civilization (the Youtube series)","color":"green"}]
 execute as @s at @s run playsound minecraft:entity.enderman.teleport master @s ~ ~ ~ 99 1
 

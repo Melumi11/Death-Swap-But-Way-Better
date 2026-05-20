@@ -5,6 +5,8 @@ execute if score Lang Core matches 2 run tellraw @a [{"text":">> ","color":"gree
 execute if score Lang Core matches 1 run tellraw @s {"text":">> Nobody can use any items on you for 2.5 minutes now! <<","color":"green","bold":true}
 execute if score Lang Core matches 2 run tellraw @s {"text":">> 在接下来的2.5分钟内, 任何人都不能对你使用任何物品! <<","color":"green","bold":true}
 
+effect clear @a minecraft:night_vision
+
 tag @s add Shield
 scoreboard players set @s Shield 15100
 execute as @a at @s run playsound minecraft:item.shield.break master @s ~ ~ ~ 9

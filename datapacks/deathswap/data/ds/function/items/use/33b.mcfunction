@@ -5,6 +5,8 @@ $execute as @p[scores={permPNo=$(s)}] run attribute @s minecraft:block_interacti
 $title @p[scores={permPNo=$(s)}] title " "
 $title @p[scores={permPNo=$(s)}] subtitle {"text":">> You're in adventure mode for 30 secs! <<","color":"aqua"}
 
+effect clear @a minecraft:night_vision
+
 $tellraw @a [{"text":">> ","color":"green"},{"selector":"@s","bold":false}," --> ",{"text":"Put ","color":"aqua"},{"selector":"@p[scores={permPNo=$(s)}]","bold":false},{"text":" in adventure mode for 30 seconds","color":"aqua"}]
 
 execute as @s run function ds:items/after_use

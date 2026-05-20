@@ -54,5 +54,6 @@ $summon parched ~14 ~ ~-14 $(d)
 
 $summon parched ~ ~ ~ $(d)
 $summon parched ~ ~ ~ $(d)
+$summon parched ~ ~ ~ $(d)
 
 setblock ~ ~ ~ yellow_banner{patterns:[{"pattern":"minecraft:stripe_middle","color":"red"},{"pattern":"minecraft:flower","color":"yellow"},{"pattern":"minecraft:stripe_top","color":"red"},{"pattern":"minecraft:rhombus","color":"yellow"},{"pattern":"minecraft:stripe_bottom","color":"red"},{"pattern":"minecraft:triangle_bottom","color":"red"}]} replace

@@ -21,6 +21,8 @@ fill ~ ~ ~ ~ ~1 ~1 minecraft:air
 fill ~ ~13 ~2 ~ ~14 ~4 minecraft:air
 execute as @s at @s run rotate @s 0 ~
 
+effect clear @a minecraft:night_vision
+
 execute if score Lang Core matches 1 run tellraw @s {"text":"You build a Stalagmite trap in front of you!","color":"gold"}
 execute if score Lang Core matches 2 run tellraw @s {"text":"你在你面前建造了一个石笋陷阱!","color":"gold"}
 

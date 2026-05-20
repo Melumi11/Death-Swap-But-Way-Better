@@ -16,6 +16,8 @@ $execute in minecraft:overworld if score oceanRandom Items matches 12 run tp @p[
 $execute in minecraft:overworld if score oceanRandom Items matches 13 run tp @p[scores={permPNo=$(s)}] -13862972 64 7667282
 $execute in minecraft:overworld if score oceanRandom Items matches 14 run tp @p[scores={permPNo=$(s)}] -25250321 64 -22587914
 
+effect clear @a minecraft:night_vision
+
 $tellraw @a [{"text":">> ","color":"green"},{"selector":"@s","bold":false}," --> ",{"text":"Teleported ","color":"blue"},{"selector":"@p[scores={permPNo=$(s)}]","bold":false},{"text":" to the middle of an ocean","color":"aqua"}]
 execute as @a at @s run playsound minecraft:entity.player.splash master @s ~ ~ ~ 9
 

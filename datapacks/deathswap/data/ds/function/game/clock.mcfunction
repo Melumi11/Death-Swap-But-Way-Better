@@ -42,6 +42,14 @@ execute as @a[tag=playing,tag=no_death] if score @s no_death matches 800.. run f
 execute as @a[tag=playing,tag=!no_death] if score @s justDied matches 1.. run function ds:game/player_died
 execute if score Players Core matches ..1 if score eliminations Core matches 1.. unless score someoneCrashed Core matches 1 run function ds:game/prep_winner
 
+execute if score TimeS Core matches 10 if score TimeT Core matches 15 run effect clear @a minecraft:night_vision
+
+# Kill excess items:
+execute as @e[type=minecraft:item,nbt=!{Item:{components:{"minecraft:custom_data":{deathswapitem:true}}}}] at @s unless entity @p[tag=playing,distance=..6] if score TimeS Core matches 58 if score TimeT Core matches 19 run kill @s
+execute as @e[type=minecraft:item,nbt=!{Item:{components:{"minecraft:custom_data":{deathswapitem:true}}}}] at @s unless entity @p[tag=playing,distance=..6] if score TimeS Core matches 45 if score TimeT Core matches 19 run kill @s
+execute as @e[type=minecraft:item,nbt=!{Item:{components:{"minecraft:custom_data":{deathswapitem:true}}}}] at @s unless entity @p[tag=playing,distance=..6] if score TimeS Core matches 30 if score TimeT Core matches 19 run kill @s
+execute as @e[type=minecraft:item,nbt=!{Item:{components:{"minecraft:custom_data":{deathswapitem:true}}}}] at @s unless entity @p[tag=playing,distance=..6] if score TimeS Core matches 15 if score TimeT Core matches 19 run kill @s
+
 # start tp_away
 execute if score totalTimeS Core matches 32 if score totalTimeM Core matches 0 if score totalTimeT Core matches 1 run function ds:game/start_tp_away
 

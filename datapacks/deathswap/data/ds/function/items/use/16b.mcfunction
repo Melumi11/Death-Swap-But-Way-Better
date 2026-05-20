@@ -6,6 +6,8 @@ $execute as @p[scores={permPNo=$(s)}] at @s run tp @s ~ -61 ~
 $execute as @p[scores={permPNo=$(s)}] at @s run setblock ~ -61 ~ minecraft:torch
 $execute as @p[scores={permPNo=$(s)}] at @s run playsound minecraft:entity.enderman.teleport master @s ~ ~ ~ 99 2
 
+effect clear @a minecraft:night_vision
+
 $tellraw @a [{"text":">> ","color":"green"},{"selector":"@s","bold":false}," --> ",{"text":"Teleported ","color":"yellow"},{"selector":"@p[scores={permPNo=$(s)}]","bold":false},{"text":" to Y level = -60 (bedrock layer)","color":"yellow"}]
 
 execute as @s run function ds:items/after_use

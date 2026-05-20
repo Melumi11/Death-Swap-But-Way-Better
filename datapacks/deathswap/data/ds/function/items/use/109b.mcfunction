@@ -18,6 +18,8 @@ $execute as @p[scores={permPNo=$(s)}] at @s run fill ~2 ~-5 ~-10 ~10 ~-2 ~10 min
 $execute as @p[scores={permPNo=$(s)}] at @s run fill ~-2 ~-5 ~-10 ~2 ~-2 ~-2 minecraft:fire replace light
 $execute as @p[scores={permPNo=$(s)}] at @s run fill ~-2 ~-5 ~2 ~2 ~-2 ~10 minecraft:fire replace light
 
+effect clear @a minecraft:night_vision
+
 $tellraw @a [{"text":">> ","color":"green"},{"selector":"@s","bold":false}," --> ",{"text":"Set everything around ","color":"yellow"},{"selector":"@p[scores={permPNo=$(s)}]","bold":false},{"text":" on fire","color":"yellow"}]
 execute as @s at @s run playsound minecraft:entity.blaze.shoot master @s ~ ~ ~ 9
 $execute as @p[scores={permPNo=$(s)}] at @s run playsound minecraft:entity.blaze.shoot master @s ~ ~ ~ 9

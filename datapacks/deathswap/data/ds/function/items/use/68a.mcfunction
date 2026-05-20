@@ -1,4 +1,5 @@
 execute as @s run function ds:items/use/all
+effect clear @a minecraft:night_vision
 
 ##execute as @s[tag=!4extra_hearts,tag=!minus2_hearts] run attribute @s minecraft:max_health base set 28.0
 ##execute as @s[tag=!4extra_hearts,tag=minus2_hearts] run attribute @s minecraft:max_health base set 24.0
