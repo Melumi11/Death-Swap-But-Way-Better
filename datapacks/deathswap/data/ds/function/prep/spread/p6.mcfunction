@@ -1,0 +1,1 @@
+execute as @p[scores={permPNo=6}] run spreadplayers 0 0 10000 29999000 false @s

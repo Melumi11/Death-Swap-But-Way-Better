@@ -1,0 +1,1 @@
+$execute store result score i$(i) Items run random value 1..110
