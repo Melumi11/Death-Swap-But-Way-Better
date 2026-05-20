@@ -148,4 +148,5 @@ gamerule natural_health_regeneration true
 gamerule fall_damage true
 difficulty normal
 clear @a
+advancement revoke @a everything
 kill @e[tag=ent]
