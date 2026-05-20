@@ -52,11 +52,6 @@ execute as @a[tag=playing,tag=many_bees] at @s if score @s many_bees matches 1..
 execute as @a[tag=playing,tag=many_bees] at @s if score @s many_bees matches 1.. run scoreboard players remove @s many_bees 1
 execute as @a[tag=playing,tag=many_bees] at @s if score @s many_bees matches ..0 run tag @s remove many_bees
 
-# Keys inverted (39)
-execute as @a[tag=playing,tag=keys_inverted] at @s if score @s keys_inverted matches 1.. run function ds:items/misc/keys_inverted
-execute as @a[tag=playing,tag=keys_inverted] at @s if score @s keys_inverted matches 1.. run scoreboard players remove @s keys_inverted 5
-execute as @a[tag=playing,tag=keys_inverted] at @s if score @s keys_inverted matches ..5 run function ds:items/misc/done_keys_inverted
-
 # Pumpkin head (41)
 execute as @a[tag=playing,tag=pumpkin_head] at @s if score @s pumpkin_head matches 1.. run scoreboard players remove @s pumpkin_head 5
 execute as @a[tag=playing,tag=pumpkin_head] at @s if score @s pumpkin_head matches ..5 run function ds:items/misc/pumpkin_head_done

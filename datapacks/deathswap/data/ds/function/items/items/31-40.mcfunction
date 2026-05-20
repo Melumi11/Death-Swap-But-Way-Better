@@ -14,7 +14,7 @@ $execute if score Lang Core matches 1 if score i$(i) Items matches 37 run item r
 
 $execute if score Lang Core matches 1 if score i$(i) Items matches 38 run item replace entity @s hotbar.$(slot) with purple_dye[custom_name={"color":"light_purple","text":"Teleport to someone (& surprise attack them?)"},lore=["It would indeed be a deadly swap"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
-$execute if score Lang Core matches 1 if score i$(i) Items matches 39 run item replace entity @s hotbar.$(slot) with cyan_dye[custom_name={"color":"light_purple","text":"Invert someone's movement keys: 45 secs"},lore=["Peter Griffin: Black is East, Up is White"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
+$execute if score Lang Core matches 1 if score i$(i) Items matches 39 run item replace entity @s hotbar.$(slot) with cyan_dye[custom_name={"color":"light_purple","text":"Give yourself 9 obsidian"},lore=["Almost enough to box someone up. Peter Griffin: Black is East, Up is White"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
 $execute if score Lang Core matches 1 if score i$(i) Items matches 40 run item replace entity @s hotbar.$(slot) with orange_dye[custom_name={"color":"gold","text":"Strike someone with lightning"},lore=["Statistically unlikely to survive"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
@@ -36,6 +36,6 @@ $execute if score Lang Core matches 2 if score i$(i) Items matches 37 run item r
 
 $execute if score Lang Core matches 2 if score i$(i) Items matches 38 run item replace entity @s hotbar.$(slot) with purple_dye[custom_name={"color":"light_purple","text":"传送到某人身边（然后发动突袭?)"},lore=["It would indeed be a deadly swap"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
-$execute if score Lang Core matches 2 if score i$(i) Items matches 39 run item replace entity @s hotbar.$(slot) with cyan_dye[custom_name={"color":"light_purple","text":"反转invert某人的移动按键：45秒"},lore=["Peter Griffin: Black is East, Up is White"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
+$execute if score Lang Core matches 2 if score i$(i) Items matches 39 run item replace entity @s hotbar.$(slot) with cyan_dye[custom_name={"color":"light_purple","text":"给自己9黑曜石"},lore=["Almost enough to box someone up. Peter Griffin: Black is East, Up is White"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
 $execute if score Lang Core matches 2 if score i$(i) Items matches 40 run item replace entity @s hotbar.$(slot) with orange_dye[custom_name={"color":"gold","text":"用闪电击中某人"},lore=["Statistically unlikely to survive"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1

@@ -1,5 +1,7 @@
 execute as @s run function ds:items/use/all
-tellraw @s {"text":"\n>> Click on which player you want to invert the keys of:","color":"light_purple","italic":true}
-scoreboard players set @s currItem 39
-scoreboard players enable @s select
-execute as @s run function ds:items/select_template
+give @s minecraft:obsidian 9
+
+tellraw @s {"text":"You got 9 obsidian!","color":"gray"}
+execute as @s at @s run playsound minecraft:entity.item.pickup master @s ~ ~ ~ 9
+
+execute as @s run function ds:items/after_use

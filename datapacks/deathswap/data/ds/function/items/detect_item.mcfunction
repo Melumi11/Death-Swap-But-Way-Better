@@ -36,7 +36,7 @@ $$(a)orange$(b)"Place a layer of lava above someone"$(c)35a
 $$(a)yellow$(b)"Spawn a horde of bees around someone"$(c)36a
 $$(a)light_blue$(b)"Give yourself full diamond armor & tools"$(c)37a
 $$(a)purple$(b)"Teleport to someone (& surprise attack them?)"$(c)38a
-$$(a)cyan$(b)"Invert someone's movement keys: 45 secs"$(c)39a
+$$(a)cyan$(b)"Give yourself 9 obsidian"$(c)39a
 $$(a)orange$(b)"Strike someone with lightning"$(c)40a
 $$(a)orange$(b)"Put a pumpkin head on someone: 1 min"$(c)41a
 $$(a)cyan$(b)"Drown someone with a flood of water"$(c)42a
