@@ -9,7 +9,7 @@ execute in minecraft:overworld unless items block 0 55 0 container.6 *[custom_da
 execute in minecraft:overworld unless items block 0 55 0 container.7 *[custom_data={deathswapitem:true}] as @s at @s run summon item ~ ~ ~ {Item:{id:"minecraft:dirt",count:1},Tags:["DeathSwapItem","DeathSwapItem2"],PickupDelay:0}
 execute in minecraft:overworld unless items block 0 55 0 container.8 *[custom_data={deathswapitem:true}] as @s at @s run summon item ~ ~ ~ {Item:{id:"minecraft:dirt",count:1},Tags:["DeathSwapItem","DeathSwapItem3"],PickupDelay:0}
 
-#Fill summoned items with whats in the chest
+#Fill summoned items with what's in the chest
 execute in minecraft:overworld run item replace entity @n[tag=DeathSwapItem1] container.0 from block 0 55 0 container.6
 execute in minecraft:overworld run item replace entity @n[tag=DeathSwapItem2] container.0 from block 0 55 0 container.7
 execute in minecraft:overworld run item replace entity @n[tag=DeathSwapItem3] container.0 from block 0 55 0 container.8

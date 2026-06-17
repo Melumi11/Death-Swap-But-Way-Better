@@ -14,7 +14,7 @@ $execute if score Lang Core matches 1 if score i$(i) Items matches 77 run item r
 
 $execute if score Lang Core matches 1 if score i$(i) Items matches 78 run item replace entity @s hotbar.$(slot) with brown_dye[custom_name={"color":"yellow","text":"Crash somebody's Minecraft game"},lore=["Breaking the fourth.. er, actually all the walls"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
-$execute if score Lang Core matches 1 if score i$(i) Items matches 79 run item replace entity @s hotbar.$(slot) with brown_dye[custom_name={"color":"white","text":"Turn OFF Keep Inventory (or ON if its off)"},lore=["Now you REALLY dont wanna die!"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
+$execute if score Lang Core matches 1 if score i$(i) Items matches 79 run item replace entity @s hotbar.$(slot) with brown_dye[custom_name={"color":"white","text":"Turn OFF Keep Inventory (or ON if it's off)"},lore=["Now you REALLY don't wanna die!"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
 $execute if score Lang Core matches 1 if score i$(i) Items matches 80 run item replace entity @s hotbar.$(slot) with white_dye[custom_name={"color":"white","text":"Put someone into spectator mode: 20 secs"},lore=["Life as a floating ghostly head!"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
@@ -36,6 +36,6 @@ $execute if score Lang Core matches 2 if score i$(i) Items matches 77 run item r
 
 $execute if score Lang Core matches 2 if score i$(i) Items matches 78 run item replace entity @s hotbar.$(slot) with brown_dye[custom_name={"color":"yellow","text":"让别人的Minecraft游戏崩溃"},lore=["Breaking the fourth.. er, actually all the walls"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
-$execute if score Lang Core matches 2 if score i$(i) Items matches 79 run item replace entity @s hotbar.$(slot) with brown_dye[custom_name={"color":"white","text":"关闭'保留物品栏' (如果已关闭, 则将其打开)"},lore=["Now you REALLY dont wanna die!"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
+$execute if score Lang Core matches 2 if score i$(i) Items matches 79 run item replace entity @s hotbar.$(slot) with brown_dye[custom_name={"color":"white","text":"关闭'保留物品栏' (如果已关闭, 则将其打开)"},lore=["Now you REALLY don't wanna die!"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
 $execute if score Lang Core matches 2 if score i$(i) Items matches 80 run item replace entity @s hotbar.$(slot) with white_dye[custom_name={"color":"white","text":"将某人设置为旁观者模式：20秒"},lore=["Life as a floating ghostly head!"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1

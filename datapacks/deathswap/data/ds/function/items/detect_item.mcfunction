@@ -76,11 +76,11 @@ $$(a)lime$(b)"Set /difficulty to easy"$(c)75a
 $$(a)green$(b)"Teleport someone to a superflat world"$(c)76a
 $$(a)brown$(b)"Give yourself a crafting table, furnace, & materials"$(c)77a
 $$(a)brown$(b)"Crash somebody's Minecraft game"$(c)78a
-$$(a)brown$(b)"Turn OFF Keep Inventory (or ON if its off)"$(c)79a
+$$(a)brown$(b)"Turn OFF Keep Inventory (or ON if it's off)"$(c)79a
 $$(a)white$(b)"Put someone into spectator mode: 20 secs"$(c)80a
 $$(a)pink$(b)"Re-shuffle everyone around the world EXCEPT YOU"$(c)81a
 $$(a)magenta$(b)"Place an Amethyst Geode where you are"$(c)82a
-$$(a)red$(b)"Turn OFF /gamerule natural regeneration (or ON if its off)"$(c)83a
+$$(a)red$(b)"Turn OFF /gamerule natural regeneration (or ON if it's off)"$(c)83a
 $$(a)white$(b)"Build a Quartz maze around someone"$(c)84a
 $$(a)gray$(b)"Turn all blocks near someone to obsidian"$(c)85a
 $$(a)light_gray$(b)"Build a Stalagmite trap next to you"$(c)86a

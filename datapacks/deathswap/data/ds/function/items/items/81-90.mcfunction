@@ -2,7 +2,7 @@ $execute if score Lang Core matches 1 if score i$(i) Items matches 81 run item r
 
 $execute if score Lang Core matches 1 if score i$(i) Items matches 82 run item replace entity @s hotbar.$(slot) with magenta_dye[custom_name={"color":"light_purple","text":"Place an Amethyst Geode where you are"},lore=["Your favorite 1.21 addition"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
-$execute if score Lang Core matches 1 if score i$(i) Items matches 83 run item replace entity @s hotbar.$(slot) with red_dye[custom_name={"color":"aqua","text":"Turn OFF /gamerule natural regeneration (or ON if its off)"},lore=["Everyone needs a reset sometimes"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
+$execute if score Lang Core matches 1 if score i$(i) Items matches 83 run item replace entity @s hotbar.$(slot) with red_dye[custom_name={"color":"aqua","text":"Turn OFF /gamerule natural regeneration (or ON if it's off)"},lore=["Everyone needs a reset sometimes"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
 $execute if score Lang Core matches 1 if score i$(i) Items matches 84 run item replace entity @s hotbar.$(slot) with white_dye[custom_name={"color":"white","text":"Build a Quartz maze around someone"},lore=["Severance in Minecraft"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 

@@ -1,4 +1,4 @@
-$execute if score Lang Core matches 1 if score i$(i) Items matches 1 run item replace entity @s hotbar.$(slot) with light_blue_dye[custom_name={"color":"aqua","text":"Give a player speed 1 billion: 40 secs"},lore=["Even the Flash cant keep up with this level of speed"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
+$execute if score Lang Core matches 1 if score i$(i) Items matches 1 run item replace entity @s hotbar.$(slot) with light_blue_dye[custom_name={"color":"aqua","text":"Give a player speed 1 billion: 40 secs"},lore=["Even the Flash can't keep up with this level of speed"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
 $execute if score Lang Core matches 1 if score i$(i) Items matches 2 run item replace entity @s hotbar.$(slot) with gray_dye[custom_name={"color":"aqua","text":"Give yourself materials to build a wither"},lore=["Suddenly Minecraft Storymode..."],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
@@ -20,7 +20,7 @@ $execute if score Lang Core matches 1 if score i$(i) Items matches 10 run item r
 
 #
 
-$execute if score Lang Core matches 2 if score i$(i) Items matches 1 run item replace entity @s hotbar.$(slot) with light_blue_dye[custom_name={"color":"aqua","text":"赋予玩家速度10亿：40秒"},lore=["Even the Flash cant keep up with this level of speed"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
+$execute if score Lang Core matches 2 if score i$(i) Items matches 1 run item replace entity @s hotbar.$(slot) with light_blue_dye[custom_name={"color":"aqua","text":"赋予玩家速度10亿：40秒"},lore=["Even the Flash can't keep up with this level of speed"],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
 $execute if score Lang Core matches 2 if score i$(i) Items matches 2 run item replace entity @s hotbar.$(slot) with gray_dye[custom_name={"color":"aqua","text":"给自己一些材料来建造一个凋灵"},lore=["Suddenly Minecraft Storymode..."],enchantment_glint_override=true,custom_data={deathswapitem:true}] 1
 
