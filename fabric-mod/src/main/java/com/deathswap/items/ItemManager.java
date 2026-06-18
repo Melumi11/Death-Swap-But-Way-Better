@@ -303,10 +303,16 @@ public final class ItemManager {
     // ---- cleanup ----
 
     private void clearOfferStacks(ServerPlayer player) {
+        // Restore the locked filler immediately rather than leaving the slots
+        // empty. If we cleared them to EMPTY, an effect that gives items (via
+        // Inventory.add) would drop those items into these now-free slots, and
+        // the next maintainLockedSlots tick would overwrite them with filler —
+        // silently erasing the powerup's reward. Re-locking synchronously keeps
+        // the slots occupied so given items land elsewhere.
         for (int slot : HOTBAR_SLOTS) {
             ItemStack stack = player.getInventory().getItem(slot);
             if (itemIdOf(stack) >= 0) {
-                player.getInventory().setItem(slot, ItemStack.EMPTY);
+                player.getInventory().setItem(slot, buildLockedFiller());
             }
         }
     }
