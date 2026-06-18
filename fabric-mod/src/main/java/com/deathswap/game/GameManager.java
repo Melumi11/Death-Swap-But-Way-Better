@@ -250,7 +250,7 @@ public final class GameManager {
             player.setHealth(player.getMaxHealth());
             player.getInventory().clearContent();
             if (settings.startWithBasicTools) {
-                giveBasicTools(player);
+                giveStarterKit(player);
             }
             spreadFarAway(player, true);
             Mc.title(player, ">> Death Swap! <<", "Survive and outlast everyone!",
@@ -379,6 +379,20 @@ public final class GameManager {
                     + data.lives + " left)", ChatFormatting.RED);
         }
         return false; // we always handle death ourselves
+    }
+
+    /**
+     * Re-supply the starter kit when an active participant respawns empty-handed,
+     * so a death/relog that wiped their inventory doesn't leave them defenseless.
+     */
+    public void onPlayerRespawn(ServerPlayer player) {
+        if (phase != GamePhase.RUNNING || !settings.startWithBasicTools) {
+            return;
+        }
+        PlayerData data = data(player);
+        if (data.playing && !data.eliminated && player.getInventory().isEmpty()) {
+            giveStarterKit(player);
+        }
     }
 
     private void survive(ServerPlayer player) {
@@ -534,12 +548,12 @@ public final class GameManager {
         Mc.teleportTo(player, level, 0.5, y, 0.5, player.getYRot(), player.getXRot());
     }
 
-    private void giveBasicTools(ServerPlayer player) {
-        Mc.give(player, net.minecraft.world.item.Items.STONE_PICKAXE, 1);
-        Mc.give(player, net.minecraft.world.item.Items.STONE_AXE, 1);
-        Mc.give(player, net.minecraft.world.item.Items.STONE_SHOVEL, 1);
+    private void giveStarterKit(ServerPlayer player) {
         Mc.give(player, net.minecraft.world.item.Items.STONE_SWORD, 1);
-        Mc.give(player, net.minecraft.world.item.Items.BREAD, 16);
+        Mc.give(player, net.minecraft.world.item.Items.STONE_AXE, 1);
+        Mc.give(player, net.minecraft.world.item.Items.STONE_PICKAXE, 1);
+        Mc.give(player, net.minecraft.world.item.Items.STONE_SHOVEL, 1);
+        Mc.give(player, net.minecraft.world.item.Items.CRAFTING_TABLE, 1);
     }
 
     private int itemOfferIntervalTicks() {
