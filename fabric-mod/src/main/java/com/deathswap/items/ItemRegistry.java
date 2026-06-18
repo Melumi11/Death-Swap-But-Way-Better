@@ -343,7 +343,7 @@ public final class ItemRegistry {
 
         add(DeathSwapItem.of(30, ORANGE, ChatFormatting.GOLD,
                 "Give yourself a fire resistance potion", "Because the Nether exists, yunno?")
-                .effect((ctx, self, t) -> Mc.givePotion(self, Potions.FIRE_RESISTANCE)).build());
+                .effect((ctx, self, t) -> Mc.givePotion(self, Potions.LONG_FIRE_RESISTANCE)).build());
     }
 
     // ============================ ITEMS 31-60 ===========================
