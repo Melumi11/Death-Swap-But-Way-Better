@@ -100,7 +100,7 @@ public final class DeathSwapCommands {
                                 return 0;
                             }
                             data.canTpAway = false;
-                            game.spreadFarAway(player);
+                            game.spreadFarAway(player, true);
                             return 1;
                         }))
                 // ---- player: item target selection ----

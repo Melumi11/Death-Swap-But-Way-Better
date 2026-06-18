@@ -5,8 +5,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -78,6 +81,20 @@ public final class Mc {
                 Component.literal(subtitle).withStyle(subtitleColor)));
         player.connection.send(new ClientboundSetTitleTextPacket(
                 Component.literal(title).withStyle(titleColor)));
+    }
+
+    /** Show text on the action bar (above the hotbar). */
+    public static void actionBar(ServerPlayer player, String text, ChatFormatting color) {
+        player.connection.send(new ClientboundSetActionBarTextPacket(
+                Component.literal(text).withStyle(color)));
+    }
+
+    /** Set the player's forced respawn point (so deaths/relogs return them here). */
+    public static void setSpawn(ServerPlayer player, ServerLevel level, BlockPos pos,
+                                float yaw, float pitch) {
+        player.setRespawnPosition(new ServerPlayer.RespawnConfig(
+                new LevelData.RespawnData(GlobalPos.of(level.dimension(), pos), yaw, pitch),
+                true), false);
     }
 
     // ---- effects / attributes ----

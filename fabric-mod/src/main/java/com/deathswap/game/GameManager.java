@@ -173,6 +173,12 @@ public final class GameManager {
     private void tickSwapClock() {
         int secondsLeft = (swapTicksRemaining + 19) / 20;
 
+        // Persistent action-bar countdown (above the hotbar). The action bar fades
+        // after ~3s, so refresh it every second.
+        if (swapTicksRemaining % 20 == 0) {
+            showSwapCountdown(secondsLeft);
+        }
+
         // Announce at the configured warning threshold, plus the final 5s countdown.
         boolean shouldWarn = secondsLeft == settings.swapWarning.seconds
                 || (secondsLeft >= 1 && secondsLeft <= 5);
@@ -184,6 +190,18 @@ public final class GameManager {
         if (--swapTicksRemaining <= 0) {
             doSwap();
             resetSwapClock();
+        }
+    }
+
+    private void showSwapCountdown(int secondsLeft) {
+        int mins = secondsLeft / 60;
+        int secs = secondsLeft % 60;
+        String time = mins > 0
+                ? String.format("%d:%02d", mins, secs)
+                : secs + "s";
+        ChatFormatting color = secondsLeft <= 5 ? ChatFormatting.RED : ChatFormatting.YELLOW;
+        for (ServerPlayer player : alivePlayers()) {
+            Mc.actionBar(player, "Swap in " + time, color);
         }
     }
 
@@ -234,7 +252,7 @@ public final class GameManager {
             if (settings.startWithBasicTools) {
                 giveBasicTools(player);
             }
-            spreadFarAway(player);
+            spreadFarAway(player, true);
             Mc.title(player, ">> Death Swap! <<", "Survive and outlast everyone!",
                     ChatFormatting.GREEN, ChatFormatting.AQUA);
         }
@@ -463,6 +481,16 @@ public final class GameManager {
     }
 
     public void spreadFarAway(ServerPlayer player) {
+        spreadFarAway(player, false);
+    }
+
+    /**
+     * Scatter a player to a random far-away surface location. When
+     * {@code setSpawn} is true the player's respawn point is moved to the
+     * destination too — used for the initial spread and the "teleport really
+     * far away" item, but not for momentary punishment teleports.
+     */
+    public void spreadFarAway(ServerPlayer player, boolean setSpawn) {
         ServerLevel level = server.overworld();
         double angle = random.nextDouble() * Math.PI * 2;
         double radius = SPREAD_MIN + random.nextDouble() * (SPREAD_MAX - SPREAD_MIN);
@@ -475,6 +503,12 @@ public final class GameManager {
         level.getChunk(x >> 4, z >> 4);
         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         Mc.teleportTo(player, level, x + 0.5, y, z + 0.5, player.getYRot(), player.getXRot());
+        if (setSpawn) {
+            // Give the player their own spawn point at the destination, so a
+            // death/relog returns them here rather than at the world origin.
+            Mc.setSpawn(player, level, new net.minecraft.core.BlockPos(x, y, z),
+                    player.getYRot(), player.getXRot());
+        }
     }
 
     private void teleportToWorldSpawn(ServerPlayer player) {

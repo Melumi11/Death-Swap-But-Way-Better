@@ -147,7 +147,7 @@ public final class ItemRegistry {
         add(DeathSwapItem.of(6, PINK, ChatFormatting.LIGHT_PURPLE,
                 "Teleport someone really far away", "Is someones trap too good? Teleport them away from it!")
                 .target(ItemTarget.OPPONENT).effect((ctx, self, t) -> {
-                    ctx.game().spreadFarAway(t);
+                    ctx.game().spreadFarAway(t, true);
                     announce(ctx.game(), self, "Teleported far, far away:", t, ChatFormatting.LIGHT_PURPLE);
                 }).build());
 
