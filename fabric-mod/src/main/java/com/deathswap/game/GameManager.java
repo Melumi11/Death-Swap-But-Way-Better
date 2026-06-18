@@ -527,6 +527,9 @@ public final class GameManager {
         // The lobby isn't a built map (unlike the datapack's superflat hub), so we
         // just gather everyone at the overworld origin column.
         ServerLevel level = server.overworld();
+        // Force the origin chunk to generate before sampling the heightmap; on an
+        // ungenerated chunk getHeight() returns the world minimum (the void).
+        level.getChunk(0, 0);
         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
         Mc.teleportTo(player, level, 0.5, y, 0.5, player.getYRot(), player.getXRot());
     }
