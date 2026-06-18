@@ -261,7 +261,9 @@ public final class GameManager {
         assignPermanentNumbers(participants);
 
         phase = GamePhase.RUNNING;
-        resetSwapClock();
+        // First swap is always 3 minutes, regardless of cycle settings.
+        swapTicksRemaining = 180 * 20;
+        lastWarnSecondAnnounced = -1;
         itemTicksRemaining = 20 * 46; // first items after ~46s, per datapack
         broadcast(">> The game has begun! <<", ChatFormatting.GREEN);
 
