@@ -175,27 +175,27 @@ public final class ItemManager {
                 .withStyle(ChatFormatting.YELLOW)
                 .append(Component.literal(item.name).withStyle(ChatFormatting.AQUA)));
 
-        // Like the datapack's select_template, every player is listed by their
-        // permanent number (yourself included); shielded players are shown but
-        // picking one re-opens the menu (see onTargetSelected -> redo_select).
+        // Every alive player is listed by their permanent number (yourself
+        // included, as in the datapack's select_template). Shielded players are
+        // shown struck-through but are NOT offered as a clickable option.
         MutableComponent line = Component.literal("");
         MutableComponent shieldedNote = Component.literal("");
         boolean anyShielded = false;
         for (ServerPlayer p : game.alivePlayers()) {
-            int permNo = game.data(p).permPNo;
             boolean shielded = game.effects().hasEffect(p.getUUID(), "shield");
-            MutableComponent chip = Component.literal("[ " + p.getName().getString() + " ]  ")
-                    .withStyle(Style.EMPTY
-                            .withColor(shielded ? ChatFormatting.DARK_GRAY : ChatFormatting.DARK_AQUA)
-                            .withClickEvent(new ClickEvent.RunCommand("/deathswap target " + permNo)));
-            line.append(chip);
+            MutableComponent chip = Component.literal("[ " + p.getName().getString() + " ]  ");
             if (shielded) {
+                chip.withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.STRIKETHROUGH);
                 if (anyShielded) {
                     shieldedNote.append(Component.literal(", "));
                 }
                 shieldedNote.append(Component.literal(p.getName().getString()));
                 anyShielded = true;
+            } else {
+                chip.withStyle(Style.EMPTY.withColor(ChatFormatting.DARK_AQUA)
+                        .withClickEvent(new ClickEvent.RunCommand("/deathswap target " + game.data(p).permPNo)));
             }
+            line.append(chip);
         }
         Mc.msg(player, line);
         if (anyShielded) {
@@ -212,11 +212,10 @@ public final class ItemManager {
             return;
         }
         ServerPlayer target = game.playerByPermNo(permNo);
-        // redo_select: shielded or eliminated target -> re-open the menu, never waste.
+        // Shielded/eliminated players aren't offered as options; guard anyway and
+        // keep the item pending so a valid chip can still be clicked.
         if (target == null || game.effects().hasEffect(target.getUUID(), "shield")) {
-            Mc.msg(player, "\n>> That player is shielded or eliminated! Select someone else! <<",
-                    ChatFormatting.RED);
-            promptForTarget(player, item);
+            Mc.msg(player, ">> That player can't be targeted. <<", ChatFormatting.RED);
             return;
         }
         data.pendingTargetItem = null;
