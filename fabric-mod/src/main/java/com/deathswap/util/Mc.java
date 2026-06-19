@@ -355,17 +355,20 @@ public final class Mc {
      * and {@code placeInChunk(..)} signatures, and {@code randomState()}.
      */
     public static boolean placeStructure(ServerLevel level, BlockPos pos, String path) {
-        Structure structure = level.registryAccess()
+        java.util.Optional<Holder.Reference<Structure>> holderOpt = level.registryAccess()
                 .lookupOrThrow(Registries.STRUCTURE)
-                .getValue(Identifier.of("minecraft", path));
-        if (structure == null) {
+                .get(Identifier.fromNamespaceAndPath("minecraft", path));
+        if (holderOpt.isEmpty()) {
             return false;
         }
+        Holder<Structure> holder = holderOpt.get();
         ChunkGenerator generator = level.getChunkSource().getGenerator();
-        StructureStart start = structure.generate(
-                level.registryAccess(), generator, generator.getBiomeSource(),
-                level.getChunkSource().randomState(), level.getStructureManager(),
-                level.getSeed(), new ChunkPos(pos), 0, level, biome -> true);
+        // Mirrors net.minecraft.server.commands.PlaceCommand.placeStructure (26.2).
+        StructureStart start = holder.value().generate(
+                holder, level.dimension(), level.registryAccess(), generator,
+                generator.getBiomeSource(), level.getChunkSource().randomState(),
+                level.getStructureManager(), level.getSeed(), ChunkPos.containing(pos),
+                0, level, biome -> true);
         if (!start.isValid()) {
             return false;
         }
@@ -375,7 +378,7 @@ public final class Mc {
         ChunkPos max = new ChunkPos(SectionPos.blockToSectionCoord(box.maxX()),
                 SectionPos.blockToSectionCoord(box.maxZ()));
         ChunkPos.rangeClosed(min, max).forEach(cp -> start.placeInChunk(level,
-                level.getStructureManager(), generator, level.getRandom(),
+                level.structureManager(), generator, level.getRandom(),
                 new BoundingBox(cp.getMinBlockX(), level.getMinY(), cp.getMinBlockZ(),
                         cp.getMaxBlockX(), level.getMaxY(), cp.getMaxBlockZ()), cp));
         return true;
@@ -388,7 +391,7 @@ public final class Mc {
      */
     public static void placeTemplate(ServerLevel level, BlockPos pos, String path) {
         StructureTemplateManager mgr = level.getStructureManager();
-        java.util.Optional<StructureTemplate> tmpl = mgr.get(Identifier.of("minecraft", path));
+        java.util.Optional<StructureTemplate> tmpl = mgr.get(Identifier.fromNamespaceAndPath("minecraft", path));
         if (tmpl.isEmpty()) {
             return;
         }
@@ -455,10 +458,10 @@ public final class Mc {
         return Blocks.NETHER_PORTAL.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_AXIS, axis);
     }
 
-    public static BlockState dripstone(net.minecraft.world.level.block.state.properties.DripstoneThickness thickness,
+    public static BlockState dripstone(net.minecraft.world.level.block.state.properties.SpeleothemThickness thickness,
                                        Direction verticalDirection) {
         return Blocks.POINTED_DRIPSTONE.defaultBlockState()
-                .setValue(BlockStateProperties.DRIPSTONE_THICKNESS, thickness)
+                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, thickness)
                 .setValue(BlockStateProperties.VERTICAL_DIRECTION, verticalDirection);
     }
 

@@ -134,7 +134,7 @@ public final class ItemRegistry {
         if (allToStoneTags == null) {
             List<TagKey<Block>> tags = new ArrayList<>();
             for (String name : ALL_TO_STONE_TAG_NAMES) {
-                tags.add(TagKey.create(Registries.BLOCK, Identifier.of("minecraft", name)));
+                tags.add(TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", name)));
             }
             allToStoneTags = tags;
         }
@@ -953,7 +953,7 @@ public final class ItemRegistry {
                 .target(ItemTarget.OPPONENT).effect((ctx, self, t) -> {
                     // Datapack 76b: spread the target into the bundled ds:superflat dimension.
                     ServerLevel flat = ctx.server().getLevel(
-                            ResourceKey.create(Registries.DIMENSION, Identifier.of("ds", "superflat")));
+                            ResourceKey.create(Registries.DIMENSION, Identifier.fromNamespaceAndPath("ds", "superflat")));
                     if (flat != null) {
                         double angle = t.getRandom().nextDouble() * Math.PI * 2;
                         double radius = 10 + t.getRandom().nextDouble() * (29_999_000 - 10);
@@ -1076,9 +1076,9 @@ public final class ItemRegistry {
                     Mc.fill(lvl, o.offset(-1, -3, 4), o.offset(-1, 0, 4), Blocks.TUFF, FillMode.ALL);
                     Mc.fillState(lvl, o.offset(0, -3, 2), o.offset(0, 0, 2), ladderN, FillMode.ALL);
                     Mc.setState(lvl, o.offset(0, -3, 4),
-                            Mc.dripstone(net.minecraft.world.level.block.state.properties.DripstoneThickness.FRUSTUM, Direction.UP));
+                            Mc.dripstone(net.minecraft.world.level.block.state.properties.SpeleothemThickness.FRUSTUM, Direction.UP));
                     Mc.setState(lvl, o.offset(0, -2, 4),
-                            Mc.dripstone(net.minecraft.world.level.block.state.properties.DripstoneThickness.TIP, Direction.UP));
+                            Mc.dripstone(net.minecraft.world.level.block.state.properties.SpeleothemThickness.TIP, Direction.UP));
                     Mc.fill(lvl, o, o.offset(0, 1, 1), Blocks.AIR, FillMode.ALL);
                     Mc.fill(lvl, o.offset(0, 13, 2), o.offset(0, 14, 4), Blocks.AIR, FillMode.ALL);
                     Mc.setYaw(self, 0);
