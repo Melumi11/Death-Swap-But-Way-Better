@@ -49,16 +49,27 @@ spying, …) run through `EffectManager`/`ActiveEffect`.
 ### Approximated where a 1:1 port is impractical
 
 - **Structure items** (53 village, 54 desert pyramid, 82 amethyst geode,
-  93 stronghold, 101 trial chamber, 102 mansion, 108 ancient city) place the
-  real structure via the vanilla `/place` command through `Mc.runAt(...)` rather
-  than reimplementing jigsaw generation. The decorative ladder/sign shafts the
-  datapack adds are omitted.
+  93 stronghold, 101 trial chamber, 102 mansion, 108 ancient city) are now placed
+  **natively** (no command dispatch): `Mc.placeStructure` runs the same
+  `Structure.generate(..)` + `placeInChunk(..)` path `/place structure` uses, and
+  `Mc.placeTemplate` loads the bundled saved `minecraft:amethyst_geode` template
+  (`src/main/resources/data/minecraft/structure/amethyst_geode.nbt`). The
+  decorative lit ladder/sign shafts and player rotation (93/101/108/102) are
+  reproduced exactly via native fills/setblocks. These `generate`/`placeInChunk`
+  calls are the most version-sensitive code in the mod.
+- **Tag conversions** (22 stone, 65 water, 85 obsidian) and the **quartz maze**
+  (84) are translated natively (`replaceTagged` over the datapack's tag union /
+  `quartz_pillars` ring pattern). **Cage** (20), **prison** (61, incl. the
+  diamond-pickaxe chest) and the **gravel tower** (9, lit pad + a column that
+  grows over ticks) are exact.
 - **Time / difficulty / game-rules** (66, 72-75, 79, 83) use the difficulty &
   game-rule APIs directly, with `time set` via the command dispatcher.
 - **Item 78 "crash someone's game"**: we deliberately do **not** crash a client.
   It reproduces the in-game warning plus heavy nausea/blindness instead.
-- **Superflat (76)** and **Parkour Civilization (95)** are approximated (spread +
-  grass platform / a quartz cell) since neither ships its custom world here.
+- **Superflat (76)** is still spread+grass platform (its `ds:superflat` dimension
+  JSON is now bundled, ready to wire). **Parkour Civilization (95)** is still a
+  quartz-cell approximation — the exact build touches ~600k blocks, so it needs a
+  spread-over-ticks pass rather than a one-shot freeze (pending).
 - **`fillbiome`** biome repaints (nether-world, peeing puddle) are skipped — only
   the block changes are reproduced.
 - **Hub/lobby**: modelled as a *state* (adventure at world spawn) driven by

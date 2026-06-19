@@ -34,7 +34,22 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.LightBlock;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.entity.SignText;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -327,5 +342,141 @@ public final class Mc {
     public static void runServer(MinecraftServer server, String command) {
         server.getCommands().performPrefixedCommand(
                 server.createCommandSourceStack().withSuppressedOutput(), command);
+    }
+
+    // ---- world: native structure placement (replaces /place structure) ----
+
+    /**
+     * Native equivalent of {@code /place structure minecraft:<path>}: generates
+     * the worldgen structure with its anchor at {@code pos} and places it across
+     * the affected chunks. No command dispatch.
+     *
+     * <p>Version-sensitive (26.2): structure registry lookup, {@code generate(..)}
+     * and {@code placeInChunk(..)} signatures, and {@code randomState()}.
+     */
+    public static boolean placeStructure(ServerLevel level, BlockPos pos, String path) {
+        Structure structure = level.registryAccess()
+                .lookupOrThrow(Registries.STRUCTURE)
+                .getValue(Identifier.of("minecraft", path));
+        if (structure == null) {
+            return false;
+        }
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        StructureStart start = structure.generate(
+                level.registryAccess(), generator, generator.getBiomeSource(),
+                level.getChunkSource().randomState(), level.getStructureManager(),
+                level.getSeed(), new ChunkPos(pos), 0, level, biome -> true);
+        if (!start.isValid()) {
+            return false;
+        }
+        BoundingBox box = start.getBoundingBox();
+        ChunkPos min = new ChunkPos(SectionPos.blockToSectionCoord(box.minX()),
+                SectionPos.blockToSectionCoord(box.minZ()));
+        ChunkPos max = new ChunkPos(SectionPos.blockToSectionCoord(box.maxX()),
+                SectionPos.blockToSectionCoord(box.maxZ()));
+        ChunkPos.rangeClosed(min, max).forEach(cp -> start.placeInChunk(level,
+                level.getStructureManager(), generator, level.getRandom(),
+                new BoundingBox(cp.getMinBlockX(), level.getMinY(), cp.getMinBlockZ(),
+                        cp.getMaxBlockX(), level.getMaxY(), cp.getMaxBlockZ()), cp));
+        return true;
+    }
+
+    /**
+     * Native equivalent of a {@code structure_block[mode=load]} of a saved
+     * template (e.g. the bundled {@code minecraft:amethyst_geode}). Places the
+     * template with its corner at {@code pos}, no rotation/mirror.
+     */
+    public static void placeTemplate(ServerLevel level, BlockPos pos, String path) {
+        StructureTemplateManager mgr = level.getStructureManager();
+        java.util.Optional<StructureTemplate> tmpl = mgr.get(Identifier.of("minecraft", path));
+        if (tmpl.isEmpty()) {
+            return;
+        }
+        tmpl.get().placeInWorld(level, pos, pos, new StructurePlaceSettings(),
+                level.getRandom(), Block.UPDATE_CLIENTS);
+    }
+
+    // ---- world: block states ----
+
+    public static void setState(ServerLevel level, BlockPos pos, BlockState state) {
+        level.setBlockAndUpdate(pos, state);
+    }
+
+    /** Fill the inclusive box with an explicit {@link BlockState}, honouring {@code mode}. */
+    public static void fillState(ServerLevel level, BlockPos c1, BlockPos c2, BlockState state, FillMode mode) {
+        int minX = Math.min(c1.getX(), c2.getX()), maxX = Math.max(c1.getX(), c2.getX());
+        int minY = Math.min(c1.getY(), c2.getY()), maxY = Math.max(c1.getY(), c2.getY());
+        int minZ = Math.min(c1.getZ(), c2.getZ()), maxZ = Math.max(c1.getZ(), c2.getZ());
+        BlockPos.MutableBlockPos cur = new BlockPos.MutableBlockPos();
+        for (int x = minX; x <= maxX; x++)
+            for (int y = minY; y <= maxY; y++)
+                for (int z = minZ; z <= maxZ; z++) {
+                    cur.set(x, y, z);
+                    BlockState existing = level.getBlockState(cur);
+                    switch (mode) {
+                        case AIR_ONLY -> { if (!existing.isAir()) continue; }
+                        case HOLLOW -> {
+                            boolean shell = x == minX || x == maxX || y == minY || y == maxY || z == minZ || z == maxZ;
+                            if (!shell) continue;
+                        }
+                        default -> { }
+                    }
+                    level.setBlockAndUpdate(cur, state);
+                }
+    }
+
+    /** Fill the box with {@code state} but only where the existing block equals {@code only}. */
+    public static void fillReplace(ServerLevel level, BlockPos c1, BlockPos c2, BlockState state, Block only) {
+        int minX = Math.min(c1.getX(), c2.getX()), maxX = Math.max(c1.getX(), c2.getX());
+        int minY = Math.min(c1.getY(), c2.getY()), maxY = Math.max(c1.getY(), c2.getY());
+        int minZ = Math.min(c1.getZ(), c2.getZ()), maxZ = Math.max(c1.getZ(), c2.getZ());
+        BlockPos.MutableBlockPos cur = new BlockPos.MutableBlockPos();
+        for (int x = minX; x <= maxX; x++)
+            for (int y = minY; y <= maxY; y++)
+                for (int z = minZ; z <= maxZ; z++) {
+                    cur.set(x, y, z);
+                    if (level.getBlockState(cur).is(only)) {
+                        level.setBlockAndUpdate(cur, state);
+                    }
+                }
+    }
+
+    // ---- common block-state builders (match the datapack's block[...] forms) ----
+
+    public static BlockState light(int level) {
+        return Blocks.LIGHT.defaultBlockState().setValue(LightBlock.LEVEL, level);
+    }
+
+    public static BlockState ladder(Direction facing) {
+        return Blocks.LADDER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
+    }
+
+    /** Place a standing birch sign rotated like {@code birch_sign[rotation=N]} with front-text lines. */
+    public static void birchSign(ServerLevel level, BlockPos pos, int rotation, String[] lines) {
+        BlockState state = Blocks.BIRCH_SIGN.defaultBlockState()
+                .setValue(BlockStateProperties.ROTATION_16, rotation);
+        level.setBlockAndUpdate(pos, state);
+        if (level.getBlockEntity(pos) instanceof SignBlockEntity sign) {
+            SignText text = sign.getFrontText();
+            for (int i = 0; i < lines.length && i < 4; i++) {
+                text = text.setMessage(i, Component.literal(lines[i]));
+            }
+            sign.setText(text, true);
+            sign.setChanged();
+            level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+        }
+    }
+
+    /** Place a chest with a single stack at {@code slot} (native {@code setblock chest{Items:[...]}}). */
+    public static void chestWithItem(ServerLevel level, BlockPos pos, int slot, ItemStack stack) {
+        level.setBlockAndUpdate(pos, Blocks.CHEST.defaultBlockState());
+        if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+            chest.setItem(slot, stack);
+        }
+    }
+
+    /** Set a player's yaw in place (native {@code rotate @s <yaw> ~}). */
+    public static void setYaw(ServerPlayer player, float yaw) {
+        teleportTo(player, level(player), player.getX(), player.getY(), player.getZ(), yaw, player.getXRot());
     }
 }

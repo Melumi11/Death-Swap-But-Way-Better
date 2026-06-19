@@ -8,8 +8,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
@@ -43,6 +45,7 @@ public final class GameManager {
     private final ItemManager items;
     private final Map<UUID, PlayerData> playerData = new HashMap<>();
     private final List<Scheduled> scheduled = new ArrayList<>();
+    private final List<GravelTower> gravelTowers = new ArrayList<>();
     private final java.util.Random random = new java.util.Random();
 
     private MinecraftServer server;
@@ -161,6 +164,8 @@ public final class GameManager {
                 player.getFoodData().setFoodLevel(20);
             }
         }
+
+        tickGravelTowers();
 
         // Item offer clock. The datapack hands items to ONE player per interval,
         // round-robin, not to everyone at once.
@@ -320,13 +325,9 @@ public final class GameManager {
             ServerPlayer player = alive.get(i);
             Location dest = locations.get((i + 1) % alive.size());
             dest.apply(player);
-            player.fallDistance = 0.0f; // disable swap fall damage (gamerule toggle in datapack)
-            // Restore health and hunger on every swap, so you arrive at your new
-            // (potentially booby-trapped) spot on a clean slate.
-            player.setHealth(player.getMaxHealth());
-            player.getFoodData().setFoodLevel(20);
-            player.getFoodData().setSaturation(5.0f);
-            Mc.effect(player, MobEffects.SLOW_FALLING, 3, 0);
+            // Disable swap fall damage exactly like the datapack (gamerule fall_damage
+            // false for a tick) — reset accumulated fall, with no extra status effects.
+            player.fallDistance = 0.0f;
             Mc.title(player, ">> Swapped! <<", "", ChatFormatting.GOLD, ChatFormatting.WHITE);
             Mc.playSound(player, SoundEvents.ENDERMAN_TELEPORT, 1.0f, 1.0f);
             data(player).canTpAway = true; // restore the emergency teleport each cycle
@@ -642,6 +643,39 @@ public final class GameManager {
     public void broadcast(String text, ChatFormatting color) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             Mc.msg(player, text, color);
+        }
+    }
+
+    // ---- gravel tower growth (item 9: misc/gravel_up grows the column over time) ----
+
+    /** Start a gravel column that grows upward to the build limit, like the datapack marker. */
+    public void addGravelTower(ServerLevel level, int x, int baseY, int z) {
+        gravelTowers.add(new GravelTower(level, x, baseY, z));
+    }
+
+    private void tickGravelTowers() {
+        for (int i = gravelTowers.size() - 1; i >= 0; i--) {
+            GravelTower g = gravelTowers.get(i);
+            g.level.setBlockAndUpdate(new BlockPos(g.x, (int) Math.floor(g.y), g.z),
+                    Blocks.GRAVEL.defaultBlockState());
+            g.y += 0.5; // marker rises 0.5/tick in misc/gravel_up
+            if (g.y >= 319) {
+                gravelTowers.remove(i);
+            }
+        }
+    }
+
+    private static final class GravelTower {
+        final ServerLevel level;
+        final int x;
+        final int z;
+        double y;
+
+        GravelTower(ServerLevel level, int x, int baseY, int z) {
+            this.level = level;
+            this.x = x;
+            this.z = z;
+            this.y = baseY;
         }
     }
 

@@ -260,13 +260,13 @@ public final class ItemManager {
         boolean anyShielded = false;
         for (ServerPlayer p : game.alivePlayers()) {
             boolean shielded = game.effects().hasEffect(p.getUUID(), "shield");
-            MutableComponent chip = Component.literal("[ " + p.getScoreboardName() + " ]  ");
+            MutableComponent chip = Component.literal("[ " + p.getName().getString() + " ]  ");
             if (shielded) {
                 chip.withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.STRIKETHROUGH);
                 if (anyShielded) {
                     shieldedNote.append(Component.literal(", "));
                 }
-                shieldedNote.append(Component.literal(p.getScoreboardName()));
+                shieldedNote.append(Component.literal(p.getName().getString()));
                 anyShielded = true;
             } else {
                 chip.withStyle(Style.EMPTY.withColor(ChatFormatting.DARK_AQUA)
