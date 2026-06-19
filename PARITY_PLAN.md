@@ -205,14 +205,22 @@ Confirmed exact values from `game/player_died`, `can_die_again`,
   (+ ZH `>> 被淘汰! <<`) **only** (no title), join Eliminated team, spectator,
   clear PNo/itemPNo/permPNo, **add `Shield` tag**, `eliminations++`. Mod sets a
   title + "You're out of lives." subtitle — change to subtitle-only exact text.
-- **Winner** (`prep_winner`/`winner`/`winner_fireworks`): replicate the exact
-  reward — and **add the missing fireworks**: `summon firework_rocket` with
-  `shape:"star", has_twinkle:true, has_trail:true,
-  colors:[2424626,2420991,2739252,2871039]`, `LifeTime:16`. Verify
-  totem (offhand vs `give`), glowing, resistance/saturation levels, the winner
-  broadcast/title (+ ZH) and `entity.ender_dragon.death … 9` against
-  `game/winner.mcfunction`; the mod is currently missing fireworks + saturation
-  and has the wrong amplifiers.
+- **Winner** (`prep_winner` → `winner` → `winner_fireworks`), exact values now
+  confirmed:
+  - `prep_winner`: glowing `6 1` (level 2), `effect clear @a`, resistance `20 5`
+    (**Resistance VI**), saturation `20 5` (**Saturation VI**), totem in the
+    **offhand** (`item replace entity @s weapon.offhand`), `title times 0 80 5`.
+  - `winner`: glowing `12 1`, title `>> <winner> Won! <<` green + subtitle
+    `They survived the way better death swap!` aqua (+ ZH), broadcast
+    `\n>>> <winner> survived the longest and won the game! <<<\n` green/bold
+    (+ ZH), `entity.ender_dragon.death … 99`, `Wins += 1`, then
+    `prep_back_to_hub` after 10s.
+  - `winner_fireworks` (triggered by the `-1 50 -15` command-block loop): summon
+    `firework_rocket` `LifeTime:16` with `shape:"star", has_twinkle:true,
+    has_trail:true, colors:[2424626,2420991,2739252,2871039]`.
+  - Mod gaps: missing fireworks + saturation, totem given to inventory (should be
+    offhand), resistance amplifier 4 (should be 5), glowing amplifier 0 (should
+    be 1), and English-only text.
 
 ---
 
@@ -223,6 +231,9 @@ Align `GameSettings` + `DeathSwapCommands` with the datapack's `Core` constants
 - Lives options the datapack actually exposes (1/3/5) vs mod's 1..6.
 - `timeCycle` 60..300; `warnLvl` 1..4 mapped to 5s/10s/30s/1min (keep enum but
   treat as cumulative per WS-5).
+- **Basic-tools start** (`game_start`, `basicTools==1`): give stone
+  sword/pickaxe/axe/shovel **+ crafting table**. The mod's `giveBasicTools`
+  gives the four stone tools **+ 16 bread and no crafting table** — fix to match.
 - Defaults: datapack `keep_inventory` default **on**, `noHunger` semantics
   (mod's `hunger=true` is the inverse — verify the default), natural regen,
   immediate respawn, send_command_feedback off, fall_damage on, pvp off.
@@ -232,22 +243,56 @@ Align `GameSettings` + `DeathSwapCommands` with the datapack's `Core` constants
 
 ---
 
-## WS-10 — Hub / lobby & start flow  ⟵ architectural, needs decision
+## WS-10 — Hub / lobby & start flow  ⟵ architectural (CORRECTED)
 
-Datapack: a hand-built `ds:superflat` hub dimension with physical buttons
-(start button at `0 112 7`, settings buttons), players gathered at `0 111 0`,
-`make_newbie_spec`, `place_start_button`, `setworldspawn`. Mod: adventure mode at
-overworld `0,0` driven by `/deathswap` commands.
+**Correction to an earlier assumption:** the hub is **not** in `ds:superflat`.
+It is a hand-built map in the **overworld** at roughly `0,111,0`
+(`back_to_hub`: `setworldspawn 2 111 -2 14 0`, `tp @a 0 111 0`;
+`place_start_button`: birch button at `0 112 7`). The hub blocks are baked into
+the four overworld region files (`dimensions/minecraft/overworld/region/r.{-1,0}.{-1,0}.mca`).
+`ds:superflat` is **only** item 76's punishment destination (see WS-11).
 
-**Options (pick one):**
-1. **Exact:** ship the `ds:superflat` dimension + the button hub as a bundled
-   datapack/structure the mod loads, and reproduce button → `prep_game`. Highest
-   fidelity, most work.
-2. **Functional:** keep `/deathswap` commands, document the hub as the one
-   deliberate UX divergence.
+**Bigger finding — the datapack is not self-contained in functions.** Part of the
+game logic lives in **command blocks pre-placed in the saved overworld** near
+origin (y ≈ 50), kicked off by `setblock … minecraft:redstone_block` at fixed
+coordinates:
+- start: birch button → `-20 50 -17`; `prep_game` → `-19 50 -19`
+- winner: `prep_winner` → `-17 50 -15`; `winner` → `-1 50 -15`
+- crash (item 78): `18 50 19`; nuke alarm (item 107): `19 50 15`
 
-Recommend confirming with the user which fidelity level is wanted before
-building the hub.
+These command blocks orchestrate the spread/`game_start` start sequence, the
+winner/`winner_fireworks` loop, the crash contraption and the nuke siren. From
+the function files we can see they mostly just invoke existing functions
+(`game/game_start`, `game/warping_all`, `extra/winner_fireworks`), but their
+**exact contents/order are the one thing not yet verified** — they require
+reading the `.mca` chunks (needs an NBT/region parser or a MC client). This must
+be done before claiming bit-exact hub parity.
+
+`game/game_start` (the real start) does, exactly: reset speed/jump, clear
+powder_snow around players, title `>> D.S. But Way Better! <<` gold + subtitle
+`Created by Jerries!` yellow, `event.raid.horn … 99 1`, set `gameOn/clockRunning`,
+`TimeS Items += 46`, sidebar→Lives, survival, pvp per setting, `reassign_pno` +
+`assign_pno`, spawnpoint at feet, late-joiners→spectator + tp to a random
+player, the "Map created by Jerries (Map version 1.0.3)" + TheWorfer27/Melumi11
+credits (+ ZH), and `basicTools` → stone sword/pickaxe/axe/shovel **+ crafting
+table** (NOT bread — the mod's `giveBasicTools` gives 16 bread and no crafting
+table; fix it).
+
+**To reproduce the hub exactly, the mod must:**
+1. Place the hub build at `~0,111,0` in the overworld — extract it from the
+   world save as a structure (`.nbt`) and have the mod place it on first load
+   (or ship the region). A pure-code rebuild would need every block hand-coded.
+2. Reimplement the command-block orchestration in Java (start → spread →
+   `game_start`; winner → `winner_fireworks` loop; crash; nuke alarm), driven by
+   the same triggers/timing.
+3. Reproduce `make_newbie_spec`, `setworldspawn`/random world-spawn table
+   (`extra/setworldspawn`, 40 entries), the start button, and the hub return
+   sequence (`prep_back_to_hub` → 2s blindness → `back_to_hub` stats screen).
+
+This is the largest workstream and the only part that cannot be "just code"
+without shipping map data. Recommend extracting the hub as a structure + JSON
+dimensions and reimplementing the command-block logic; flag the `.mca`
+command-block read as a required sub-task.
 
 ---
 
@@ -263,10 +308,22 @@ building the hub.
   `minecraft:amethyst_geode` via a structure block (the `.nbt` is in
   `generated/minecraft/structure/`); mod uses `/place feature` (different shape).
   Ship/track the saved structure and load it for exact output.
-- **76 (superflat) & 95 (parkour civilization):** these teleport into bundled
-  custom content (`ds:superflat` dimension / the Parkour-Civilization build).
-  Exact parity needs that content shipped with the mod; otherwise they remain the
-  grass-platform / quartz-cell approximations. Tie to the WS-10 decision.
+- **76 (superflat):** teleports the target into the **`ds:superflat`** dimension
+  via `spreadplayers 0 0 10 29999000`. That dimension is **JSON-defined**
+  (`data/ds/dimension/superflat.json` + `dimension_type/type_superflat.json`:
+  flat plains, layers bedrock/stone/stone/grass, `structure_overrides:[villages]`,
+  height 352, min_y -64) and generated on demand — its region folder is empty.
+  Exact parity = register this dimension in the mod (or ship the dimension JSON)
+  and spread the target into it, instead of the current grass-platform hack.
+- **95 (parkour civilization):** CORRECTION — this is **not** a bundled custom
+  world. The datapack hand-builds it with fills (the `parkour_civ` helper: iron-bar
+  walls + a water moat over two Y-ranges). Reproduce those exact fills; the mod's
+  single quartz cell is wrong.
+- **Hotbar placeholders:** `inventory/resetitems.mcfunction` fills empty slots
+  6/7/8 with placeholder `command_block` items named "Item Slot #1/2/3" (gray),
+  `item_model=gray_stained_glass_pane`, `max_stack_size=1`,
+  `custom_data={deathswapitem:true}`. The mod shows nothing in idle slots — add
+  these placeholders for exact display.
 
 ---
 
