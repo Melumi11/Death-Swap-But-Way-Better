@@ -138,6 +138,18 @@ public final class ItemRegistry {
     };
     private static List<TagKey<Block>> allToStoneTags;
 
+    private static final TagKey<Block> SAND_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "sand"));
+    private static final TagKey<Block> LEAVES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "leaves"));
+    private static final TagKey<Block> LOGS_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "logs"));
+    private static final TagKey<Block> COAL_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "coal_ores"));
+    private static final TagKey<Block> COPPER_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "copper_ores"));
+    private static final TagKey<Block> IRON_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "iron_ores"));
+    private static final TagKey<Block> LAPIS_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "lapis_ores"));
+    private static final TagKey<Block> REDSTONE_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "redstone_ores"));
+    private static final TagKey<Block> EMERALD_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "emerald_ores"));
+    private static final TagKey<Block> GOLD_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "gold_ores"));
+    private static final TagKey<Block> DIAMOND_ORES_TAG = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("minecraft", "diamond_ores"));
+
     private static List<TagKey<Block>> allToStoneTags() {
         if (allToStoneTags == null) {
             List<TagKey<Block>> tags = new ArrayList<>();
@@ -761,9 +773,77 @@ public final class ItemRegistry {
         add(DeathSwapItem.of(50, RED, ChatFormatting.RED,
                 "Transform the world around someone into the Nether", "Just like the A Minecraft Movie (2025)!")
                 .target(ItemTarget.OPPONENT).effect((ctx, self, t) -> {
+                    int[] ticksLeft = {52 * 20};
                     ctx.effects().apply(t, new ActiveEffect("nether_world", 52 * 20, p -> {
+                        int remaining = ticksLeft[0]--;
+                        boolean isCrimson = remaining > 420;
+                        ServerLevel lvl = Mc.level(p);
                         BlockPos o = p.blockPosition();
-                        Mc.fill(Mc.level(p), o.offset(3, 5, 3), o.offset(-3, -2, -3), Blocks.NETHERRACK, FillMode.NATURAL_ONLY);
+                        BlockPos c1 = o.offset(3, 5, 3);
+                        BlockPos c2 = o.offset(-3, -2, -3);
+                        int minX = Math.min(c1.getX(), c2.getX()), maxX = Math.max(c1.getX(), c2.getX());
+                        int minY = Math.min(c1.getY(), c2.getY()), maxY = Math.max(c1.getY(), c2.getY());
+                        int minZ = Math.min(c1.getZ(), c2.getZ()), maxZ = Math.max(c1.getZ(), c2.getZ());
+                        BlockPos.MutableBlockPos cur = new BlockPos.MutableBlockPos();
+                        for (int x = minX; x <= maxX; x++) {
+                            for (int y = minY; y <= maxY; y++) {
+                                for (int z = minZ; z <= maxZ; z++) {
+                                    cur.set(x, y, z);
+                                    BlockState existing = lvl.getBlockState(cur);
+                                    if (existing.isAir() || existing.is(Blocks.BEDROCK) || existing.is(Blocks.BARRIER) || existing.is(Blocks.LIGHT)) {
+                                        continue;
+                                    }
+                                    if (existing.is(Blocks.NETHERRACK)
+                                            || existing.is(Blocks.CRIMSON_NYLIUM)
+                                            || existing.is(Blocks.WARPED_NYLIUM)
+                                            || existing.is(Blocks.SOUL_SAND)
+                                            || existing.is(Blocks.SOUL_SOIL)
+                                            || existing.is(Blocks.NETHER_WART_BLOCK)
+                                            || existing.is(Blocks.WARPED_WART_BLOCK)
+                                            || existing.is(Blocks.CRIMSON_STEM)
+                                            || existing.is(Blocks.WARPED_STEM)
+                                            || existing.is(Blocks.NETHER_QUARTZ_ORE)
+                                            || existing.is(Blocks.NETHER_GOLD_ORE)
+                                            || existing.is(Blocks.LAVA)
+                                            || existing.is(Blocks.WEEPING_VINES)
+                                            || existing.is(Blocks.WEEPING_VINES_PLANT)
+                                            || existing.is(Blocks.TWISTING_VINES)
+                                            || existing.is(Blocks.TWISTING_VINES_PLANT)) {
+                                        continue;
+                                    }
+                                    BlockState toState = null;
+                                    if (existing.is(Blocks.WATER)) {
+                                        toState = Blocks.LAVA.defaultBlockState();
+                                    } else if (existing.is(Blocks.GRASS_BLOCK)) {
+                                        toState = (isCrimson ? Blocks.CRIMSON_NYLIUM : Blocks.WARPED_NYLIUM).defaultBlockState();
+                                    } else if (existing.is(SAND_TAG)) {
+                                        toState = (isCrimson ? Blocks.SOUL_SAND : Blocks.WARPED_NYLIUM).defaultBlockState();
+                                    } else if (existing.is(LEAVES_TAG)) {
+                                        toState = (isCrimson ? Blocks.NETHER_WART_BLOCK : Blocks.WARPED_WART_BLOCK).defaultBlockState();
+                                    } else if (existing.is(LOGS_TAG)) {
+                                        toState = (isCrimson ? Blocks.CRIMSON_STEM : Blocks.WARPED_STEM).defaultBlockState();
+                                    } else if (existing.is(COAL_ORES_TAG)
+                                            || existing.is(COPPER_ORES_TAG)
+                                            || existing.is(IRON_ORES_TAG)
+                                            || existing.is(LAPIS_ORES_TAG)
+                                            || existing.is(REDSTONE_ORES_TAG)
+                                            || existing.is(EMERALD_ORES_TAG)) {
+                                        toState = Blocks.NETHER_QUARTZ_ORE.defaultBlockState();
+                                    } else if (existing.is(GOLD_ORES_TAG)
+                                            || existing.is(DIAMOND_ORES_TAG)) {
+                                        toState = Blocks.NETHER_GOLD_ORE.defaultBlockState();
+                                    } else if (existing.is(Blocks.VINE) || existing.is(Blocks.CAVE_VINES) || existing.is(Blocks.CAVE_VINES_PLANT)) {
+                                        toState = (isCrimson ? Blocks.WEEPING_VINES : Blocks.TWISTING_VINES).defaultBlockState();
+                                    } else if (existing.is(Blocks.END_STONE) || isAllToStoneTagged(existing)) {
+                                        toState = Blocks.NETHERRACK.defaultBlockState();
+                                    }
+
+                                    if (toState != null) {
+                                        lvl.setBlock(cur, toState, Block.UPDATE_CLIENTS);
+                                    }
+                                }
+                            }
+                        }
                     }, null));
                     announce(ctx.game(), self, "Turned the world into the Nether around", t, ChatFormatting.RED);
                 }).build());
