@@ -3,6 +3,7 @@
 	"package": "com.deathswap.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"LevelSetBlockMixin",
 		"PlayerDropMixin"
 	],
 	"injectors": {

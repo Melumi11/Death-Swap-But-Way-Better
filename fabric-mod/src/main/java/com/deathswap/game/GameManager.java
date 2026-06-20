@@ -59,6 +59,8 @@ public final class GameManager {
     private final java.util.Random random = new java.util.Random();
     /** Pre-generated spread destinations, filled while idling in the hub. */
     private final ChunkCache chunkCache = new ChunkCache();
+    /** Snapshots block changes during a game so the world is restored when it ends. */
+    private final WorldRollback worldRollback = new WorldRollback();
 
     private MinecraftServer server;
     private GamePhase phase = GamePhase.HUB;
@@ -382,6 +384,11 @@ public final class GameManager {
 
         startingPlayerCount = participants.size();
 
+        // Start snapshotting block changes now, before any game-driven world edits
+        // (gravel towers, item builds) or player mining, so the whole game can be
+        // rolled back to this point when it ends.
+        worldRollback.begin();
+
         if (isNight) {
             Mc.runServer(server, "time set noon");
         }
@@ -686,6 +693,12 @@ public final class GameManager {
         isNight = false;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             sendToHub(player);
+        }
+        // Now that everyone is safely back in the hub, undo every block change the
+        // game made so the shared world is restored to how it looked before the round.
+        int restored = worldRollback.rollback(server);
+        if (restored > 0) {
+            DeathSwapMod.LOGGER.info("Rolled back {} block change(s) from the last game.", restored);
         }
         broadcast(">> Back to the lobby. Run /deathswap start for another round. <<",
                 ChatFormatting.AQUA);
