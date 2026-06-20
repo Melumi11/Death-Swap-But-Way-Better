@@ -1394,12 +1394,14 @@ public final class ItemRegistry {
                             double d = e.distanceTo(p);
                             if (e instanceof net.minecraft.world.entity.projectile.Projectile) {
                                 if (d <= 5.2) e.discard();
-                            } else if (e instanceof net.minecraft.world.entity.monster.Creeper) {
-                                if (d <= 4.5) e.discard();
-                            } else if (e instanceof Monster
-                                    || e instanceof net.minecraft.world.entity.monster.Ghast
-                                    || e instanceof net.minecraft.world.entity.animal.bee.Bee) {
-                                if (d <= 3.2) e.discard();
+                            } else if (e instanceof LivingEntity le) {
+                                if (e instanceof net.minecraft.world.entity.monster.Creeper) {
+                                    if (d <= 4.5) le.hurt(lvl.damageSources().magic(), le.getHealth());
+                                } else if (e instanceof Monster
+                                        || e instanceof net.minecraft.world.entity.monster.Ghast
+                                        || e instanceof net.minecraft.world.entity.animal.bee.Bee) {
+                                    if (d <= 3.2) le.hurt(lvl.damageSources().magic(), le.getHealth());
+                                }
                             }
                         }
                         // Purple dust ring so the forcefield is visible (datapack particle).
