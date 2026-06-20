@@ -6,6 +6,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -22,7 +23,15 @@ public final class DeathSwapCommands {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, GameManager game) {
-        dispatcher.register(Commands.literal("deathswap")
+        LiteralArgumentBuilder<CommandSourceStack> root = buildCommandTree(game);
+        // /deathswap
+        dispatcher.register(root);
+        // /ds as a convenient alias
+        dispatcher.register(Commands.literal("ds").redirect(root.build()));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildCommandTree(GameManager game) {
+        return Commands.literal("deathswap")
                 // ---- admin: lobby / flow ----
                 .then(Commands.literal("start")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -156,7 +165,7 @@ public final class DeathSwapCommands {
                 .then(Commands.literal("report")
                         .then(Commands.argument("message", StringArgumentType.greedyString())
                                 .executes(ctx -> report(ctx,
-                                        StringArgumentType.getString(ctx, "message"))))));
+                                        StringArgumentType.getString(ctx, "message")))));
     }
 
     private static int report(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx,
