@@ -121,6 +121,7 @@ public final class Translator {
                     "你现在可以使用一座沙漠神殿/金字塔了! 干得好!"),
             Map.entry(">> You can use items again!!! <<", ">> 你可以再次使用物品了!!! <<"),
             Map.entry(">> You can't use items for 3 minutes! <<", ">> 你在三分钟内无法使用任何物品! <<"),
+            Map.entry(">> The world has finished transforming into the Nether! <<", ">> 世界已完成向下界的转变! <<"),
             Map.entry("+4 Hearts!", "+4 颗心!"),
             Map.entry("You placed an Amethyst Geode", "你放置了一个紫水晶洞"),
             Map.entry("You built a Stalagmite trap in front of you!", "你在你面前建造了一个石笋陷阱!"),

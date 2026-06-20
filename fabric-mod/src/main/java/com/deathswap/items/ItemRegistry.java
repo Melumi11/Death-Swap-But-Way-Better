@@ -844,7 +844,7 @@ public final class ItemRegistry {
                                 }
                             }
                         }
-                    }, null));
+                    }, p -> Mc.msg(p, translate(ctx, ">> The world has finished transforming into the Nether! <<"), ChatFormatting.RED)));
                     announce(ctx.game(), self, "Turned the world into the Nether around", t, ChatFormatting.RED);
                 }).build());
 
