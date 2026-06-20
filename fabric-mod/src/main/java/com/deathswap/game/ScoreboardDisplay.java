@@ -1,5 +1,6 @@
 package com.deathswap.game;
 
+import com.deathswap.util.Translator;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -28,19 +29,19 @@ final class ScoreboardDisplay {
     private MinecraftServer server;
 
     /** Create the objectives (fresh each game) and bind them to their display slots. */
-    void start(MinecraftServer server) {
+    void start(MinecraftServer server, boolean zh) {
         this.server = server;
         Scoreboard board = server.getScoreboard();
 
         Objective lives = recreate(board, LIVES_OBJECTIVE,
                 ObjectiveCriteria.DUMMY,
-                Component.literal("Lives").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD),
+                Component.literal(Translator.translate(zh, "Lives")).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD),
                 ObjectiveCriteria.RenderType.INTEGER);
         board.setDisplayObjective(DisplaySlot.SIDEBAR, lives);
 
         Objective health = recreate(board, HEALTH_OBJECTIVE,
                 ObjectiveCriteria.HEALTH,
-                Component.literal("Health").withStyle(ChatFormatting.RED),
+                Component.literal(Translator.translate(zh, "Health")).withStyle(ChatFormatting.RED),
                 ObjectiveCriteria.RenderType.HEARTS);
         board.setDisplayObjective(DisplaySlot.LIST, health);
     }

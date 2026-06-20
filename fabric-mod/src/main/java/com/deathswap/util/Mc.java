@@ -44,6 +44,9 @@ import net.minecraft.world.level.block.LightBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -137,6 +140,14 @@ public final class Mc {
     /** Native {@code title @a times <fadeIn> <stay> <fadeOut>} (ticks). */
     public static void titleTimes(ServerPlayer player, int fadeIn, int stay, int fadeOut) {
         player.connection.send(new ClientboundSetTitlesAnimationPacket(fadeIn, stay, fadeOut));
+    }
+
+    /**
+     * Native {@code title @a clear}: immediately wipe any showing title/subtitle
+     * instead of letting a long-stay countdown linger after a swap.
+     */
+    public static void clearTitles(ServerPlayer player) {
+        player.connection.send(new net.minecraft.network.protocol.game.ClientboundClearTitlesPacket(false));
     }
 
     // ---- effects / attributes ----
@@ -315,7 +326,11 @@ public final class Mc {
                         }
                         case HOLLOW -> {
                             boolean shell = x == minX || x == maxX || y == minY || y == maxY || z == minZ || z == maxZ;
-                            if (!shell) continue;
+                            if (!shell) {
+                                // Vanilla `fill ... hollow` clears the interior to air.
+                                level.setBlockAndUpdate(cur, Blocks.AIR.defaultBlockState());
+                                continue;
+                            }
                         }
                         case ALL -> { /* always */ }
                     }
@@ -412,6 +427,35 @@ public final class Mc {
     }
 
     /**
+     * Locates a genuine ocean biome far from world spawn, for the "middle of
+     * the ocean" item. {@link ServerLevel#findClosestBiome3d} is the native
+     * equivalent of {@code /locate biome #minecraft:is_ocean}: it samples the
+     * biome source outward from a far random origin until it lands in an ocean,
+     * so the destination is actually water rather than a hard-coded coordinate
+     * that may have generated as land.
+     *
+     * @return an ocean {@link BlockPos} at sea level, or the last sampled origin
+     *         if no ocean was found within range after several attempts.
+     */
+    public static BlockPos findOcean(ServerLevel level, RandomSource random) {
+        java.util.function.Predicate<Holder<Biome>> isOcean = h -> h.is(BiomeTags.IS_OCEAN);
+        BlockPos origin = BlockPos.ZERO;
+        for (int attempt = 0; attempt < 8; attempt++) {
+            double angle = random.nextDouble() * Math.PI * 2;
+            int dist = 1_000_000 + random.nextInt(19_000_000);
+            origin = new BlockPos((int) (Math.cos(angle) * dist), 64, (int) (Math.sin(angle) * dist));
+            // Same search params as LocateCommand: radius 6400, horizontal step 32, vertical step 64.
+            com.mojang.datafixers.util.Pair<BlockPos, Holder<Biome>> hit =
+                    level.findClosestBiome3d(isOcean, origin, 6400, 32, 64);
+            if (hit != null) {
+                BlockPos p = hit.getFirst();
+                return new BlockPos(p.getX(), 64, p.getZ());
+            }
+        }
+        return origin;
+    }
+
+    /**
      * Native equivalent of a {@code structure_block[mode=load]} of a saved
      * template (e.g. the bundled {@code minecraft:amethyst_geode}). Places the
      * template with its corner at {@code pos}, no rotation/mirror.
@@ -447,7 +491,10 @@ public final class Mc {
                         case AIR_ONLY -> { if (!existing.isAir()) continue; }
                         case HOLLOW -> {
                             boolean shell = x == minX || x == maxX || y == minY || y == maxY || z == minZ || z == maxZ;
-                            if (!shell) continue;
+                            if (!shell) {
+                                level.setBlockAndUpdate(cur, Blocks.AIR.defaultBlockState());
+                                continue;
+                            }
                         }
                         default -> { }
                     }
@@ -479,6 +526,12 @@ public final class Mc {
 
     public static BlockState ladder(Direction facing) {
         return Blocks.LADDER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
+    }
+
+    /** Flowing water at a given level (e.g. {@code water[level=2]} for the pee stream). */
+    public static BlockState flowingWater(int level) {
+        return Blocks.WATER.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.LiquidBlock.LEVEL, level);
     }
 
     public static BlockState netherPortal(Direction.Axis axis) {
@@ -520,6 +573,23 @@ public final class Mc {
             }
             sign.setText(text, true);
             sign.setChanged();
+            level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+        }
+    }
+
+    /**
+     * Place a banner block and stamp the given pattern layers onto it (native
+     * {@code setblock <color>_banner{patterns:[...]}}).
+     */
+    public static void bannerWithPatterns(ServerLevel level, BlockPos pos, Block banner,
+            net.minecraft.world.level.block.entity.BannerPatternLayers patterns) {
+        BlockState state = banner.defaultBlockState();
+        level.setBlockAndUpdate(pos, state);
+        if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.BannerBlockEntity be) {
+            ItemStack stack = new ItemStack(banner);
+            stack.set(DataComponents.BANNER_PATTERNS, patterns);
+            be.applyComponentsFromItemStack(stack);
+            be.setChanged();
             level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
         }
     }

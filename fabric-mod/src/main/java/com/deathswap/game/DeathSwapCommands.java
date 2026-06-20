@@ -21,15 +21,15 @@ public final class DeathSwapCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, GameManager game) {
         dispatcher.register(Commands.literal("deathswap")
                 // ---- admin: lobby / flow ----
-                .then(Commands.literal("settings")
-                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                        .executes(ctx -> {
-                            game.enterSettings();
-                            return 1;
-                        }))
                 .then(Commands.literal("start")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(ctx -> {
+                            if (game.phase() != GamePhase.HUB ) {
+                                ctx.getSource().sendFailure(Component.literal(
+                                        "Game is already in progress. Stop it before starting a new one."));
+                                return 0;
+                            }
+
                             if (game.startGame()) {
                                 return 1;
                             }
@@ -120,7 +120,9 @@ public final class DeathSwapCommands {
                                 return 0;
                             }
                             data.canTpAway = false;
-                            game.spreadFarAway(player, true);
+                            // Emergency teleport is a momentary escape, not a new spawn:
+                            // a later death should still return to the initial spread.
+                            game.spreadFarAway(player);
                             return 1;
                         }))
                 // ---- player: item target selection ----

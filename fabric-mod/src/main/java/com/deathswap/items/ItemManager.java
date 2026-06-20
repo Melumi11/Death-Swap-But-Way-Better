@@ -3,6 +3,7 @@ package com.deathswap.items;
 import com.deathswap.game.GameManager;
 import com.deathswap.game.PlayerData;
 import com.deathswap.util.Mc;
+import com.deathswap.util.Translator;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -71,7 +72,7 @@ public final class ItemManager {
         rotation = (rotation + 1) % alive.size();
         ServerPlayer player = alive.get(rotation);
         if (game.effects().hasEffect(player.getUUID(), "blockedItems")) {
-            Mc.msg(player, "** Items blocked!", ChatFormatting.RED);
+            Mc.msg(player, com.deathswap.game.Messages.itemsBlocked(game.settings().isChinese()));
             return;
         }
         offer(player);
@@ -90,9 +91,9 @@ public final class ItemManager {
         for (int i = 0; i < HOTBAR_SLOTS.length; i++) {
             player.getInventory().setItem(HOTBAR_SLOTS[i], buildDye(picks.get(i)));
         }
-        Mc.title(player, " ", ">> New items! <<", ChatFormatting.WHITE, ChatFormatting.GREEN);
-        Mc.msg(player, "<< You got a new set of items! They will expire in 45 seconds if "
-                + "you don't use one of them! You can only use one! >>", ChatFormatting.GREEN);
+        boolean zh = game.settings().isChinese();
+        Mc.titleRaw(player, Component.literal(" "), com.deathswap.game.Messages.newItemsSubtitle(zh));
+        Mc.msg(player, com.deathswap.game.Messages.newItemsChat(zh));
         Mc.playSound(player, SoundEvents.ITEM_PICKUP, 9.0f, 1.0f);
     }
 
@@ -129,7 +130,8 @@ public final class ItemManager {
         return false;
     }
 
-    private static boolean isLocked(ItemStack stack) {
+    /** True for the immovable barrier filler that occupies the powerup slots. */
+    public static boolean isLocked(ItemStack stack) {
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
         return data != null && data.copyTag().getBooleanOr(NBT_LOCKED, false);
     }
@@ -138,7 +140,7 @@ public final class ItemManager {
     private ItemStack buildLockedFiller() {
         ItemStack stack = new ItemStack(Items.BARRIER);
         stack.set(DataComponents.CUSTOM_NAME,
-                Component.literal("Powerup slot — items appear here")
+                Component.literal(Translator.translate(game.settings().isChinese(), "Powerup slot — items appear here"))
                         .withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
         CompoundTag tag = new CompoundTag();
         tag.putBoolean(NBT_LOCKED, true);
@@ -162,7 +164,10 @@ public final class ItemManager {
         data.choosingItem = true;
         data.pendingTargetItem = null;
         player.getInventory().setItem(HOTBAR_SLOTS[0], buildDye(item));
-        Mc.msg(player, "Given item #" + id + " (" + item.name + ") -- drop it to use.",
+        boolean zh = game.settings().isChinese();
+        String name = Translator.translate(zh, item.name);
+        Mc.msg(player, Translator.translate(zh, "Given item #") + id + " (" + name
+                + Translator.translate(zh, ") -- drop it to use."),
                 ChatFormatting.GREEN);
         Mc.playSound(player, SoundEvents.ITEM_PICKUP, 9.0f, 1.0f);
         return true;
@@ -176,8 +181,10 @@ public final class ItemManager {
     /** Build the dyed display item exactly as the datapack's items/items/* do. */
     private ItemStack buildDye(DeathSwapItem item) {
         ItemStack stack = new ItemStack(Items.DYE.asList().get(item.dye.ordinal()));
+        // Show the Chinese name in Chinese mode (datapack ch_detect_item names).
+        String displayName = Translator.translate(game.settings().isChinese(), item.name);
         stack.set(DataComponents.CUSTOM_NAME,
-                Component.literal(item.name).withStyle(item.nameColor).withStyle(s -> s.withItalic(false)));
+                Component.literal(displayName).withStyle(item.nameColor).withStyle(s -> s.withItalic(false)));
         stack.set(DataComponents.LORE, new ItemLore(List.of(
                 Component.literal(item.lore).withStyle(ChatFormatting.GRAY))));
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
@@ -215,6 +222,16 @@ public final class ItemManager {
         DeathSwapItem item = registry.byId(id);
         if (item == null || !data.choosingItem) {
             clearOfferStacks(player);
+            return true;
+        }
+        // Enforce the "blocked items" effect (item 56) at the moment of use, not
+        // just when offering. A blocked player may still be holding an offer (or
+        // be handed one), so swallow the use here rather than firing the effect.
+        if (game.effects().hasEffect(player.getUUID(), "blockedItems")) {
+            clearOfferStacks(player);
+            data.clearOffer();
+            Mc.msg(player, Translator.translate(game.settings().isChinese(),
+                    "** You can't use items right now!"), ChatFormatting.RED);
             return true;
         }
         clearOfferStacks(player);
@@ -275,7 +292,8 @@ public final class ItemManager {
     // ---- targeting (opponent items) ----
 
     private void promptForTarget(ServerPlayer player, DeathSwapItem item) {
-        Mc.msg(player, Component.literal("\n>> Click on which player you want to use this item on: ")
+        Mc.msg(player, Component.literal(Translator.translate(game.settings().isChinese(),
+                "\n>> Click on which player you want to use this item on: "))
                 .withStyle(ChatFormatting.YELLOW)
                 .append(Component.literal(item.name).withStyle(ChatFormatting.AQUA)));
 
@@ -304,7 +322,8 @@ public final class ItemManager {
         Mc.msg(player, line);
         if (anyShielded) {
             Mc.msg(player, shieldedNote.withStyle(ChatFormatting.ITALIC)
-                    .append(Component.literal(" is/are shielded from items!").withStyle(ChatFormatting.YELLOW)));
+                    .append(Component.literal(Translator.translate(game.settings().isChinese(),
+                            " is/are shielded from items!")).withStyle(ChatFormatting.YELLOW)));
         }
     }
 
@@ -319,7 +338,8 @@ public final class ItemManager {
         // Shielded/eliminated players aren't offered as options; guard anyway and
         // keep the item pending so a valid chip can still be clicked.
         if (target == null || game.effects().hasEffect(target.getUUID(), "shield")) {
-            Mc.msg(player, ">> That player can't be targeted. <<", ChatFormatting.RED);
+            Mc.msg(player, Translator.translate(game.settings().isChinese(),
+                    ">> That player can't be targeted. <<"), ChatFormatting.RED);
             return;
         }
         data.pendingTargetItem = null;
@@ -330,17 +350,15 @@ public final class ItemManager {
     // ---- cleanup ----
 
     private void clearOfferStacks(ServerPlayer player) {
-        // Restore the locked filler immediately rather than leaving the slots
-        // empty. If we cleared them to EMPTY, an effect that gives items (via
-        // Inventory.add) would drop those items into these now-free slots, and
-        // the next maintainLockedSlots tick would overwrite them with filler —
-        // silently erasing the powerup's reward. Re-locking synchronously keeps
-        // the slots occupied so given items land elsewhere.
+        // Lock ALL three powerup slots with filler immediately, not just the ones
+        // still holding a dye. The slot the player just dropped from is already
+        // EMPTY (vanilla removes the stack before the drop event), so leaving it
+        // empty let an item-giving powerup's Inventory.add land a reward there —
+        // which the next maintainLockedSlots tick then overwrote with filler,
+        // silently erasing it. Occupying every powerup slot up front forces given
+        // items to land in real inventory slots.
         for (int slot : HOTBAR_SLOTS) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (itemIdOf(stack) >= 0) {
-                player.getInventory().setItem(slot, buildLockedFiller());
-            }
+            player.getInventory().setItem(slot, buildLockedFiller());
         }
     }
 

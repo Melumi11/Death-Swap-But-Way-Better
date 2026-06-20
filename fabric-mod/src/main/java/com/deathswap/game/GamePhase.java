@@ -14,8 +14,6 @@ package com.deathswap.game;
 public enum GamePhase {
     /** Players wait in the lobby. Adventure mode, no clock. */
     HUB,
-    /** Host configures lives / swap interval / rules before launch. */
-    SETTINGS,
     /** Active game: swap clock running, items being offered. */
     RUNNING,
     /** A winner has been decided; victory sequence then return to hub. */

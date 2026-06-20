@@ -2,14 +2,17 @@ package com.deathswap;
 
 import com.deathswap.game.DeathSwapCommands;
 import com.deathswap.game.GameManager;
+import com.deathswap.items.ItemManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +56,15 @@ public final class DeathSwapMod implements ModInitializer {
         // Re-give the starter kit if a player respawns with an empty inventory.
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
                 GAME.onPlayerRespawn(newPlayer));
+
+        // The powerup slots hold a barrier as filler, which is a placeable block.
+        // Cancel any attempt to place it so players can't build with it.
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (ItemManager.isLocked(player.getItemInHand(hand))) {
+                return InteractionResult.FAIL;
+            }
+            return InteractionResult.PASS;
+        });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 DeathSwapCommands.register(dispatcher, GAME));

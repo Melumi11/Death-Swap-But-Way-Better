@@ -1,5 +1,6 @@
 package com.deathswap.game;
 
+import com.deathswap.DeathSwapMod;
 import com.deathswap.effects.EffectManager;
 import com.deathswap.items.ItemManager;
 import com.deathswap.util.Mc;
@@ -40,6 +41,13 @@ public final class GameManager {
      */
     private static final int SPREAD_MAX = 250_000;
 
+    /**
+     * Length of the pre-game freeze: after the spread, players are blinded and
+     * held in place for this long before the swap clock starts, so everyone gets
+     * a moment to load in without being attacked or wandering off.
+     */
+    private static final int FREEZE_TICKS = 7 * 20;
+
     private final GameSettings settings = new GameSettings();
     private final EffectManager effects = new EffectManager();
     private final ScoreboardDisplay scoreboard = new ScoreboardDisplay();
@@ -49,6 +57,8 @@ public final class GameManager {
     private final List<GravelTower> gravelTowers = new ArrayList<>();
     private final List<java.util.function.BooleanSupplier> buildJobs = new ArrayList<>();
     private final java.util.Random random = new java.util.Random();
+    /** Pre-generated spread destinations, filled while idling in the hub. */
+    private final ChunkCache chunkCache = new ChunkCache();
 
     private MinecraftServer server;
     private GamePhase phase = GamePhase.HUB;
@@ -56,6 +66,11 @@ public final class GameManager {
     private int swapTicksRemaining;
     private int itemTicksRemaining;
     private int endingTicksRemaining;
+    /** Pre-game freeze countdown; while > 0 players are blinded and held in place. */
+    private int freezeTicksRemaining;
+    /** Last spread-cache figures broadcast to chat, so the hub only logs on change. */
+    private int lastCacheReadyLogged = -1;
+    private int lastCachePendingLogged = -1;
     private int startingPlayerCount;
     /** Tracks which swap-warning thresholds have already fired this cycle. */
     private int lastWarnSecondAnnounced = -1;
@@ -112,16 +127,28 @@ public final class GameManager {
     // ---- player connection ----
 
     public void onPlayerJoin(ServerPlayer player) {
-        PlayerData data = data(player);
-        if (phase == GamePhase.RUNNING || phase == GamePhase.ENDING) {
-            // Late joiner: spectate the ongoing game (extra/make_newbie_spec.mcfunction).
-            data.playing = false;
-            player.setGameMode(GameType.SPECTATOR);
-            broadcast(Messages.joinedMidGame(player.getDisplayName()));
-            Mc.titleRaw(player, Messages.spectateTitle(), Messages.spectateSubtitle());
-        } else {
+        if (phase != GamePhase.RUNNING && phase != GamePhase.ENDING) {
             sendToHub(player);
+            return;
         }
+        // PlayerData survives disconnects (see onPlayerLeave), so an existing entry
+        // means this is someone reconnecting to a game they were already part of —
+        // not a fresh late joiner.
+        PlayerData existing = dataIfPresent(player.getUUID());
+        if (existing != null && (existing.playing || existing.eliminated)) {
+            // Reconnecting participant: drop them straight back into the game if they
+            // were still alive, otherwise keep them spectating as they already were.
+            player.setGameMode(existing.playing && !existing.eliminated
+                    ? GameType.SURVIVAL
+                    : GameType.SPECTATOR);
+            return;
+        }
+        // Genuine late joiner: spectate the ongoing game (extra/make_newbie_spec.mcfunction).
+        PlayerData data = data(player);
+        data.playing = false;
+        player.setGameMode(GameType.SPECTATOR);
+        broadcast(Messages.joinedMidGame(zh(), player.getDisplayName()));
+        Mc.titleRaw(player, Messages.spectateTitle(zh()), Messages.spectateSubtitle(zh()));
     }
 
     public void onPlayerLeave(ServerPlayer player) {
@@ -139,7 +166,29 @@ public final class GameManager {
         data.winner = false;
         player.setGameMode(GameType.ADVENTURE);
         effects.clearAll(player);
+        resetPlayerStats(player);
         teleportToWorldSpawn(player);
+    }
+
+    /**
+     * Wipe everything that an item could have changed and that doesn't belong in
+     * a fresh game/lobby: max health (items 68/69), current health, food &
+     * saturation, fire/fall, and the inventory + ender chest. Attribute-based
+     * effects clean themselves up via {@code effects.clearAll}; max health is a
+     * permanent change, so it must be reset here.
+     */
+    private void resetPlayerStats(ServerPlayer player) {
+        var maxHp = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+        if (maxHp != null) {
+            maxHp.setBaseValue(20.0);
+        }
+        player.setHealth(player.getMaxHealth());
+        player.getFoodData().setFoodLevel(20);
+        player.getFoodData().setSaturation(5.0f);
+        player.clearFire();
+        player.fallDistance = 0.0f;
+        player.getInventory().clearContent();
+        player.getEnderChestInventory().clearContent();
     }
 
     // ---- main tick ----
@@ -149,16 +198,47 @@ public final class GameManager {
             return;
         }
         runScheduled();
+        // Pre-generate spread destinations whenever a game isn't in progress — at
+        // server startup and any time we're not running or ending — so the cache is
+        // filling during all the idle ticks before the next game starts.
+        if (phase != GamePhase.RUNNING && phase != GamePhase.ENDING) {
+            tickChunkCache();
+        }
         switch (phase) {
             case RUNNING -> tickRunning();
             case ENDING -> tickEnding();
-            default -> {
-                // HUB / SETTINGS: nothing time-driven.
-            }
+            case HUB -> {}
         }
     }
 
+    /**
+     * Idle work for when no game is running: use the spare ticks to pre-generate
+     * far-away spread destinations for the next game's start, and report the
+     * cache's progress to chat whenever it changes (debug visibility).
+     */
+    private void tickChunkCache() {
+        chunkCache.tick(server.overworld(), random, SPREAD_MIN, SPREAD_MAX);
+
+        int ready = chunkCache.readyCount();
+        int pending = chunkCache.pendingChunkCount();
+        if (ready == lastCacheReadyLogged && pending == lastCachePendingLogged) {
+            return; // nothing changed since the last line; don't spam chat
+        }
+        lastCacheReadyLogged = ready;
+        lastCachePendingLogged = pending;
+        String status = "Chunk cache: " + ready + "/" + chunkCache.capacity()
+                + " ready" + (pending > 0 ? " (building, " + pending + " chunks left)" : "");
+        // Console log so progress is visible from server startup, before any player
+        // is online to receive the chat broadcast.
+        DeathSwapMod.LOGGER.info(status);
+        Mc.broadcast(server, "[DeathSwap] " + status, ChatFormatting.DARK_GRAY);
+    }
+
     private void tickRunning() {
+        if (freezeTicksRemaining > 0) {
+            tickFreeze();
+            return;
+        }
         effects.tick(server);
         items.tick();
 
@@ -187,6 +267,37 @@ public final class GameManager {
         tickSwapClock();
 
         checkWinCondition();
+    }
+
+    /**
+     * Pre-game freeze: hold every player at their spread location with no velocity
+     * so they can't walk, fall or be knocked away while blinded. When the window
+     * elapses, hand control back and start the swap/item clocks.
+     */
+    private void tickFreeze() {
+        ServerLevel level = server.overworld();
+        for (ServerPlayer player : alivePlayers()) {
+            PlayerData data = data(player);
+            if (data.spawnPos == null) {
+                continue;
+            }
+            player.setDeltaMovement(Vec3.ZERO);
+            player.fallDistance = 0.0f;
+            Mc.teleportTo(player, level,
+                    data.spawnPos.getX() + 0.5, data.spawnPos.getY(), data.spawnPos.getZ() + 0.5,
+                    data.spawnYaw, player.getXRot());
+        }
+        if (--freezeTicksRemaining <= 0) {
+            startClocksAfterFreeze();
+        }
+    }
+
+    /** Start the swap and item clocks once the pre-game freeze has elapsed. */
+    private void startClocksAfterFreeze() {
+        // First swap is always 3 minutes, regardless of cycle settings.
+        swapTicksRemaining = 180 * 20;
+        lastWarnSecondAnnounced = -1;
+        itemTicksRemaining = 20 * 46; // first items after ~46s, per datapack
     }
 
     private void tickSwapClock() {
@@ -242,7 +353,7 @@ public final class GameManager {
         // clock.mcfunction: ">> Swapping <<" gold title + countdown subtitle, plus
         // playsound minecraft:block.anvil.land master @s ~ ~ ~ 9 0 (volume 9, pitch 0).
         for (ServerPlayer player : alivePlayers()) {
-            Mc.titleRaw(player, Messages.swappingTitle(), Messages.swappingSubtitle(secondsLeft));
+            Mc.titleRaw(player, Messages.swappingTitle(zh()), Messages.swappingSubtitle(zh(), secondsLeft));
             Mc.playSound(player, SoundEvents.ANVIL_LAND, 9.0f, 0.0f);
         }
     }
@@ -254,11 +365,6 @@ public final class GameManager {
     }
 
     // ---- phase transitions ----
-
-    public void enterSettings() {
-        phase = GamePhase.SETTINGS;
-        broadcast(">> Configure the game, then run /deathswap start <<", ChatFormatting.AQUA);
-    }
 
     /** Begin a game with everyone currently in the hub. */
     public boolean startGame() {
@@ -276,13 +382,20 @@ public final class GameManager {
 
         startingPlayerCount = participants.size();
 
+        if (isNight) {
+            Mc.runServer(server, "time set noon");
+        }
+        isNight = false;
+
         for (ServerPlayer player : participants) {
             PlayerData data = data(player);
             data.resetForNewGame(settings.maxLives);
             player.setGameMode(GameType.SURVIVAL);
-            player.setHealth(player.getMaxHealth());
-            player.getInventory().clearContent();
-            player.getEnderChestInventory().clearContent(); // don't carry stashes between rounds
+            // Full reset so nothing leaks in from a previous game: clear any running
+            // effects, then reset max health/health/food/saturation and wipe the
+            // inventory + ender chest before the starter kit and spread.
+            effects.clearAll(player);
+            resetPlayerStats(player);
             if (settings.startWithBasicTools) {
                 giveStarterKit(player);
             }
@@ -291,27 +404,29 @@ public final class GameManager {
             spreadFarAway(player, true);
             // warping_all.mcfunction: ">> Spreading players... <<" action bar.
             Mc.actionbar(player, Messages.spreadingActionbar(zh()));
+            // Blind everyone for the pre-game freeze window; tickFreeze() holds
+            // them in place for the same duration before the swap clock begins.
+            Mc.effect(player, MobEffects.BLINDNESS, FREEZE_TICKS / 20, 0);
         }
 
         // Assign permanent slot numbers after the per-player reset (which zeroes them).
         assignPermanentNumbers(participants);
 
         phase = GamePhase.RUNNING;
-        scoreboard.start(server);
+        scoreboard.start(server, zh());
         updateSidebar();
-        // First swap is always 3 minutes, regardless of cycle settings.
-        swapTicksRemaining = 180 * 20;
-        lastWarnSecondAnnounced = -1;
-        itemTicksRemaining = 20 * 46; // first items after ~46s, per datapack
+        // Hold everyone blind and motionless first; the swap and item clocks only
+        // start once the freeze ends (see tickFreeze / startClocksAfterFreeze).
+        freezeTicksRemaining = FREEZE_TICKS;
 
         // game_start.mcfunction runs ~5s after the spread: the title card, the raid
         // horn (volume 99, pitch 1) and the map credits.
         schedule(20 * 5, () -> {
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-                Mc.titleRaw(p, Messages.startTitle(), Messages.startSubtitle());
+                Mc.titleRaw(p, Messages.startTitle(zh()), Messages.startSubtitle(zh()));
                 Mc.playSound(p, SoundEvents.RAID_HORN, 99.0f, 1.0f);
                 Mc.msg(p, Messages.mapCredit(zh()));
-                Mc.msg(p, Messages.additionalCredit());
+                Mc.msg(p, Messages.additionalCredit(zh()));
             }
         });
 
@@ -365,11 +480,13 @@ public final class GameManager {
             player.fallDistance = 0.0f;
             // swap.mcfunction: clear the title, show the gold ">> Swapped! <<" action
             // bar, then the green "You warped to: <name>" line (Chinese adds a 2nd line).
-            // There is no swap sound in the datapack.
-            Mc.titleRaw(player, Component.empty(), Component.empty());
+            // There is no swap sound in the datapack. Use a real `title clear` so the
+            // "Swap in 1" countdown subtitle (with its long stay time) vanishes at once
+            // instead of lingering on screen.
+            Mc.clearTitles(player);
             Mc.actionbar(player, Messages.swapActionbar(zh()));
             ServerPlayer warpedToPlayer = alive.get(destIndex);
-            Mc.msg(player, Messages.warpedTo(warpedToPlayer.getDisplayName()));
+            Mc.msg(player, Messages.warpedTo(zh(), warpedToPlayer.getDisplayName()));
             if (zh()) {
                 Mc.msg(player, Messages.warpedToChinese());
             }
@@ -444,8 +561,8 @@ public final class GameManager {
 
         // player_died.mcfunction (runs for every death, including the fatal one):
         // broadcast line, ">> YOU DIED! <<" title and the "-1 Life!" subtitle.
-        broadcast(Messages.diedBroadcast(player.getDisplayName()));
-        Mc.titleRaw(player, Messages.diedTitle(zh()), Messages.diedSubtitle());
+        broadcast(Messages.diedBroadcast(zh(), player.getDisplayName()));
+        Mc.titleRaw(player, Messages.diedTitle(zh()), Messages.diedSubtitle(zh()));
 
         if (data.lives <= 0) {
             eliminate(player);
@@ -539,7 +656,7 @@ public final class GameManager {
             broadcast(Messages.winnerBroadcast(zh(), winnerName));
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 Mc.titleTimes(p, 0, 140, 5);
-                Mc.titleRaw(p, Messages.winnerTitle(winnerName), Messages.winnerSubtitle(zh()));
+                Mc.titleRaw(p, Messages.winnerTitle(zh(), winnerName), Messages.winnerSubtitle(zh()));
                 Mc.playSound(p, SoundEvents.ENDER_DRAGON_DEATH, 99.0f, 1.0f);
             }
         } else {
@@ -555,6 +672,18 @@ public final class GameManager {
     private void returnEveryoneToHub() {
         phase = GamePhase.HUB;
         scoreboard.stop();
+        // Don't discard the cache: a destination is removed from it the moment it's
+        // handed out (ChunkCache.next), so anything still queued is unused and safe
+        // to carry into the next game. The hub phase tops it back up from here.
+        lastCacheReadyLogged = -1; // re-log current cache state as the hub resumes
+        lastCachePendingLogged = -1;
+        // Language (item 72) is a per-game state, not a persistent setting: reset it
+        // so the next game starts in English unless item 72 is used again.
+        settings.language = GameSettings.Language.ENGLISH;
+        if (isNight) {
+            Mc.runServer(server, "time set noon");
+        }
+        isNight = false;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             sendToHub(player);
         }
@@ -620,34 +749,17 @@ public final class GameManager {
      */
     public void spreadFarAway(ServerPlayer player, boolean setSpawn) {
         ServerLevel level = server.overworld();
-        int x = 0, z = 0, y = 0;
-        // Re-roll the location until we find dry land, so players don't spawn in
-        // the middle of an ocean/lake. Falls back to the last pick after a cap.
-        for (int attempt = 0; attempt < 32; attempt++) {
-            double angle = random.nextDouble() * Math.PI * 2;
-            double radius = SPREAD_MIN + random.nextDouble() * (SPREAD_MAX - SPREAD_MIN);
-            x = (int) (Math.cos(angle) * radius);
-            z = (int) (Math.sin(angle) * radius);
-            // Force the destination chunk to generate before sampling the heightmap.
-            // Far-away chunks aren't loaded yet, and getHeight() on an ungenerated
-            // chunk returns the world's minimum build height (the void), which would
-            // drop the player into the void to their death.
-            level.getChunk(x >> 4, z >> 4);
-            y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            // The surface block sits just below the spawn height. If it (or the
-            // block we'd stand in) holds a fluid, it's water/lava — try again.
-            net.minecraft.core.BlockPos feet = new net.minecraft.core.BlockPos(x, y, z);
-            if (level.getFluidState(feet.below()).isEmpty()
-                    && level.getFluidState(feet).isEmpty()) {
-                break;
-            }
-        }
-        Mc.teleportTo(player, level, x + 0.5, y, z + 0.5, player.getYRot(), player.getXRot());
+        // A destination pre-generated while no game was running when one is ready (so
+        // the world-gen cost isn't paid here at game start), otherwise rolled live. The
+        // cache handles the fallback internally, so this call always returns a valid
+        // dry-land column regardless of whether the cache had anything.
+        net.minecraft.core.BlockPos pos = chunkCache.next(level, random, SPREAD_MIN, SPREAD_MAX);
+        Mc.teleportTo(player, level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                player.getYRot(), player.getXRot());
         if (setSpawn) {
             // Give the player their own spawn point at the destination, so a
             // death/relog returns them here rather than at the world origin
             // (datapack: spawnpoint @s ~ ~ ~ in game_start.mcfunction).
-            net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, y, z);
             Mc.setSpawn(player, level, pos, player.getYRot(), player.getXRot());
             // Remember it so a death sends the player back to this initial spread
             // location, mirroring the vanilla respawn-at-spawn-point behaviour.
@@ -662,39 +774,35 @@ public final class GameManager {
         // gather everyone at one dry surface column near the overworld origin.
         ServerLevel level = server.overworld();
         if (hubSpawn == null) {
-            hubSpawn = findDryHubColumn(level);
+            hubSpawn = buildHubPlatform(level);
         }
         Mc.teleportTo(player, level, hubSpawn.getX() + 0.5, hubSpawn.getY(), hubSpawn.getZ() + 0.5,
                 player.getYRot(), player.getXRot());
     }
 
     /**
-     * Find a dry surface column near the origin for the lobby. Scans outward in a
-     * square spiral so everyone gathers on land rather than bobbing in an ocean.
-     * Falls back to the origin column if nothing dry is found within range.
+     * Lay the lobby's gather point at the origin column. The lobby isn't a built
+     * map, so we drop a small stone platform at the surface there — this keeps the
+     * hub on solid ground even when the origin sits in an ocean, so players never
+     * spawn bobbing in water.
      */
-    private net.minecraft.core.BlockPos findDryHubColumn(ServerLevel level) {
-        for (int radius = 0; radius <= 64; radius += 8) {
-            for (int dx = -radius; dx <= radius; dx += 8) {
-                for (int dz = -radius; dz <= radius; dz += 8) {
-                    // Only inspect the ring at this radius; inner rings were checked already.
-                    if (radius > 0 && Math.abs(dx) != radius && Math.abs(dz) != radius) {
-                        continue;
-                    }
-                    // Force the chunk to generate before sampling the heightmap; on an
-                    // ungenerated chunk getHeight() returns the world minimum (the void).
-                    level.getChunk(dx >> 4, dz >> 4);
-                    int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, dx, dz);
-                    net.minecraft.core.BlockPos feet = new net.minecraft.core.BlockPos(dx, y, dz);
-                    if (level.getFluidState(feet.below()).isEmpty()
-                            && level.getFluidState(feet).isEmpty()) {
-                        return feet;
-                    }
-                }
+    private net.minecraft.core.BlockPos buildHubPlatform(ServerLevel level) {
+        net.minecraft.core.BlockPos feet = surfaceColumn(level, 0, 0);
+        for (int px = -2; px <= 2; px++) {
+            for (int pz = -2; pz <= 2; pz++) {
+                level.setBlockAndUpdate(feet.offset(px, -1, pz), Blocks.STONE.defaultBlockState());
             }
         }
-        level.getChunk(0, 0);
-        return new net.minecraft.core.BlockPos(0, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0), 0);
+        return feet;
+    }
+
+    /** Surface (feet) position of the column at the given x/z, generating the chunk first. */
+    private net.minecraft.core.BlockPos surfaceColumn(ServerLevel level, int x, int z) {
+        // Force the chunk to generate before sampling the heightmap; on an
+        // ungenerated chunk getHeight() returns the world minimum (the void).
+        level.getChunk(x >> 4, z >> 4);
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        return new net.minecraft.core.BlockPos(x, y, z);
     }
 
     private void giveStarterKit(ServerPlayer player) {
