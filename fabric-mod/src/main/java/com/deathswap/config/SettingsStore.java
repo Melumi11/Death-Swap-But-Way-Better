@@ -68,6 +68,7 @@ public final class SettingsStore {
         target.showSwapTimer = saved.showSwapTimer;
         target.startWithBasicTools = saved.startWithBasicTools;
         target.naturalRegen = saved.naturalRegen;
+        target.keepInventory = saved.keepInventory;
         target.swapWarning = saved.swapWarning;
     }
 

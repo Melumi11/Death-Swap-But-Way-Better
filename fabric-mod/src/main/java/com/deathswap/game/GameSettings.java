@@ -51,6 +51,7 @@ public final class GameSettings {
     public boolean showSwapTimer = true;
     public boolean startWithBasicTools = true;
     public boolean naturalRegen = true;
+    public boolean keepInventory = false;
 
     public SwapWarning swapWarning = SwapWarning.TEN_SECONDS;
 

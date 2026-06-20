@@ -137,6 +137,7 @@ public final class GameManager {
         this.server = server;
         this.phase = GamePhase.HUB;
         SettingsStore.load(settings);
+        applyGameRules();
         winsStore.load();
         items.registerAll();
         // Stand up the hub's wins HUD now; per-player rows are pushed as people join.
@@ -146,6 +147,16 @@ public final class GameManager {
     /** Persist the current game settings so they survive a server restart. */
     public void persistSettings() {
         SettingsStore.save(settings);
+    }
+
+    /**
+     * Reset the keepInventory and naturalRegen gamerules to the current settings.
+     * Called on server start and whenever a game starts or ends, so the world's
+     * rules always reflect the operator's configured DeathSwap settings.
+     */
+    private void applyGameRules() {
+        server.getGameRules().set(GameRules.KEEP_INVENTORY, settings.keepInventory, server);
+        server.getGameRules().set(GameRules.NATURAL_HEALTH_REGENERATION, settings.naturalRegen, server);
     }
 
     public MinecraftServer server() {
@@ -545,6 +556,7 @@ public final class GameManager {
         if (participants.isEmpty()) {
             return false;
         }
+        applyGameRules();
 
         startingPlayerCount = participants.size();
 
@@ -902,6 +914,7 @@ public final class GameManager {
 
     private void returnEveryoneToHub() {
         phase = GamePhase.HUB;
+        applyGameRules();
         // Swap the game's lives/health HUD back to the hub's wins tally.
         scoreboard.startHub(server, zh());
         // Don't discard the cache: a destination is removed from it the moment it's
