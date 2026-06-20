@@ -1261,7 +1261,18 @@ public final class ItemRegistry {
                     for (ServerPlayer p : ctx.game().alivePlayers()) {
                         Mc.setAttribute(p, Attributes.GRAVITY, 0.008);
                         Mc.setAttribute(p, Attributes.FALL_DAMAGE_MULTIPLIER, 0.0);
-                        ctx.effects().apply(p, new ActiveEffect("low_grav", 182 * 20, null, q -> {
+                        // Re-evaluate each tick so the low gravity stops applying the
+                        // moment a player drops to spectator (e.g. they died before the
+                        // timer expired) and only ever affects live participants.
+                        ctx.effects().apply(p, new ActiveEffect("low_grav", 182 * 20, q -> {
+                            if (q.isSpectator()) {
+                                Mc.resetAttribute(q, Attributes.GRAVITY, DEF_GRAVITY);
+                                Mc.resetAttribute(q, Attributes.FALL_DAMAGE_MULTIPLIER, DEF_FALL);
+                            } else {
+                                Mc.setAttribute(q, Attributes.GRAVITY, 0.008);
+                                Mc.setAttribute(q, Attributes.FALL_DAMAGE_MULTIPLIER, 0.0);
+                            }
+                        }, q -> {
                             Mc.resetAttribute(q, Attributes.GRAVITY, DEF_GRAVITY);
                             Mc.resetAttribute(q, Attributes.FALL_DAMAGE_MULTIPLIER, DEF_FALL);
                         }));
