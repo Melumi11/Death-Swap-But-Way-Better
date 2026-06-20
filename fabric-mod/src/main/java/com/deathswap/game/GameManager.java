@@ -743,8 +743,9 @@ public final class GameManager {
         data.deathImmunityTicks = 160;
 
         // player_died.mcfunction (runs for every death, including the fatal one):
-        // broadcast line, ">> YOU DIED! <<" title and the "-1 Life!" subtitle.
-        broadcast(Messages.diedBroadcast(zh(), player.getDisplayName()));
+        // broadcast line, ">> YOU DIED! <<" title and the "-1 Life!" subtitle. The
+        // broadcast carries the vanilla death message so it states how they died.
+        broadcast(Messages.diedBroadcast(zh(), source.getLocalizedDeathMessage(player)));
         Mc.titleRaw(player, Messages.diedTitle(zh()), Messages.diedSubtitle(zh()));
 
         if (data.lives <= 0) {

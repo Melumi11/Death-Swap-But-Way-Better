@@ -79,11 +79,15 @@ public final class Messages {
 
     // ---- game/player_died.mcfunction ----
 
-    /** Broadcast: {@code >> <name> > DIED! Lost a life!} (dark_red/red, bold). */
-    public static Component diedBroadcast(boolean zh, Component name) {
+    /**
+     * Broadcast: {@code >> <vanilla death message> > Lost a life!} (dark_red/red,
+     * bold). The death message is the vanilla localized line (e.g. "Steve was
+     * slain by Zombie"), so the broadcast states how the player died.
+     */
+    public static Component diedBroadcast(boolean zh, Component deathMessage) {
         return lit(">> ", ChatFormatting.DARK_RED, true)
-                .append(name.copy().withStyle(s -> s.withBold(false)))
-                .append(lit(Translator.translate(zh, " > DIED! Lost a life!"), ChatFormatting.RED, true));
+                .append(deathMessage.copy().withStyle(s -> s.withColor(ChatFormatting.RED).withBold(false)))
+                .append(lit(Translator.translate(zh, " > Lost a life!"), ChatFormatting.RED, true));
     }
 
     /** Title: {@code >> YOU DIED! <<} / {@code >> 你死了! <<} (red). */
