@@ -70,7 +70,7 @@ public final class GameManager {
      * {@code pause-when-empty-seconds} (default 60), so a tick-based timer would
      * freeze and never fire. We arm a real-time scheduler on disconnect instead.
      */
-    private static final long IDLE_RESET_SECONDS = 30;
+    private static final long IDLE_RESET_SECONDS = 5;
 
     private final GameSettings settings = new GameSettings();
     private final EffectManager effects = new EffectManager();
