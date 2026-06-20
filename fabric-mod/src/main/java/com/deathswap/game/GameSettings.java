@@ -72,6 +72,9 @@ public final class GameSettings {
         requireInRange("lives", maxLives, 1, 6);
         requireInRange("swap interval (seconds)", swapIntervalSeconds, 30, 300);
         requireInRange("first swap (seconds)", firstSwapSeconds, 30, 600);
+        if (swapWarning == null) {
+            throw new IllegalStateException("swap warning must be set");
+        }
     }
 
     private static void requireInRange(String name, int value, int minInclusive, int maxInclusive) {
