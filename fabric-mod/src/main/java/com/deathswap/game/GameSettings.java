@@ -36,6 +36,13 @@ public final class GameSettings {
     /** Fixed swap interval in seconds (datapack {@code timeCycle}, 60..300). */
     public int swapIntervalSeconds = 120;
 
+    /**
+     * Delay before the very first swap, in seconds. The opening cycle is fixed at
+     * this length regardless of {@link #randomCycle}, giving players time to gear
+     * up before swaps begin.
+     */
+    public int firstSwapSeconds = 180;
+
     /** When true, swap intervals are randomized between 30s and 4m59s. */
     public boolean randomCycle = true;
 
@@ -61,5 +68,6 @@ public final class GameSettings {
     public void clampToLegalValues() {
         maxLives = Math.max(1, Math.min(6, maxLives));
         swapIntervalSeconds = Math.max(30, Math.min(300, swapIntervalSeconds));
+        firstSwapSeconds = Math.max(30, Math.min(600, firstSwapSeconds));
     }
 }

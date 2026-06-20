@@ -45,6 +45,7 @@ public final class SettingsStore {
             if (saved != null) {
                 target.maxLives = saved.maxLives;
                 target.swapIntervalSeconds = saved.swapIntervalSeconds;
+                target.firstSwapSeconds = saved.firstSwapSeconds;
                 target.randomCycle = saved.randomCycle;
                 target.pvp = saved.pvp;
                 target.hunger = saved.hunger;

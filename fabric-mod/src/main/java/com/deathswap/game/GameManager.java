@@ -444,8 +444,8 @@ public final class GameManager {
 
     /** Start the swap and item clocks once the pre-game freeze has elapsed. */
     private void startClocksAfterFreeze() {
-        // First swap is always 3 minutes, regardless of cycle settings.
-        swapTicksRemaining = 180 * 20;
+        // First swap uses the configured opening delay, regardless of cycle settings.
+        swapTicksRemaining = settings.firstSwapSeconds * 20;
         lastWarnSecondAnnounced = -1;
         itemTicksRemaining = 20 * 46; // first items after ~46s, per datapack
     }

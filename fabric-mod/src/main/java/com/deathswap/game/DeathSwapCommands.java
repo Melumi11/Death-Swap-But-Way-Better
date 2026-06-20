@@ -101,6 +101,15 @@ public final class DeathSwapCommands {
                                             return ack(ctx, "Swap interval = "
                                                     + game.settings().swapIntervalSeconds + "s");
                                         })))
+                        .then(Commands.literal("firstswap")
+                                .then(Commands.argument("seconds", IntegerArgumentType.integer(30, 600))
+                                        .executes(ctx -> {
+                                            game.settings().firstSwapSeconds =
+                                                    IntegerArgumentType.getInteger(ctx, "seconds");
+                                            game.persistSettings();
+                                            return ack(ctx, "First swap = "
+                                                    + game.settings().firstSwapSeconds + "s");
+                                        })))
                         .then(Commands.literal("randomcycle")
                                 .then(Commands.argument("on", BoolArgumentType.bool())
                                         .executes(ctx -> {
