@@ -894,8 +894,6 @@ public final class GameManager {
                 Mc.effect(p, MobEffects.SATURATION, 20, 5);
             }
             Mc.effect(winner, MobEffects.GLOWING, 12, 1);
-            winner.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
-                    new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TOTEM_OF_UNDYING));
 
             // winner.mcfunction: title times 0 140 5, the green win title/subtitle,
             // the dragon-death sound (volume 99) and the broadcast line.
