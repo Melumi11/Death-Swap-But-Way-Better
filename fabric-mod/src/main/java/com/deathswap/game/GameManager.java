@@ -250,6 +250,7 @@ public final class GameManager {
         effects.clearAll(player);
         resetPlayerStats(player);
         Mc.infiniteEffect(player, MobEffects.REGENERATION, 254);
+        Mc.infiniteEffect(player, MobEffects.SATURATION, 254);
         teleportToWorldSpawn(player);
     }
 
