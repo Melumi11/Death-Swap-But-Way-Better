@@ -274,12 +274,15 @@ public final class ItemRegistry {
         add(DeathSwapItem.of(4, PURPLE, ChatFormatting.LIGHT_PURPLE,
                 "Teleport someone to the End", "Lets beat Minecraft!")
                 .target(ItemTarget.OPPONENT).effect((ctx, self, t) -> {
-                    // Datapack 4b: an end_portal pad at fixed overworld coords; the target is
-                    // dropped on it and falls through to the End.
-                    ServerLevel ow = ctx.server().overworld();
-                    Mc.fillState(ow, new BlockPos(-3, 79, -11), new BlockPos(1, 77, -7), Mc.light(15), FillMode.ALL);
-                    Mc.fill(ow, new BlockPos(-3, 76, -11), new BlockPos(1, 76, -7), Blocks.END_PORTAL, FillMode.ALL);
-                    Mc.teleportTo(t, ow, -1, 77, -9, 180, 0);
+                    ServerLevel end = ctx.server().getLevel(Level.END);
+                    if (end != null) {
+                        double posX = 100.5, posY = 49, posZ = 0.5;
+                        // Force the destination chunk to load before teleporting, else the
+                        // client hangs on "Loading terrain..."
+                        BlockPos p = BlockPos.containing(posX, posY, posZ);
+                        end.getChunk(p.getX() >> 4, p.getZ() >> 4);
+                        Mc.teleportTo(t, end, posX, posY, posZ, t.getYRot(), t.getXRot());
+                    }
                     announce(ctx.game(), self, "Teleported to the End dimension:", t, ChatFormatting.LIGHT_PURPLE);
                 }).build());
 
