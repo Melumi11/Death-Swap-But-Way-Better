@@ -91,13 +91,6 @@ public final class ItemRegistry {
         return pool.size() <= 3 ? pool : pool.subList(0, 3);
     }
 
-    public void registerAll() {
-        register1to30();
-        register31to60();
-        register61to90();
-        register91to110();
-    }
-
     // ---- shared helpers ----
 
     private static void announce(com.deathswap.game.GameManager game, ServerPlayer self,
@@ -247,9 +240,7 @@ public final class ItemRegistry {
         };
     }
 
-    // ============================ ITEMS 1-30 ============================
-
-    private void register1to30() {
+    public void registerAll() {
         add(DeathSwapItem.of(1, LIGHT_BLUE, ChatFormatting.AQUA,
                 "Give a player speed 1 billion: 40 secs", "Even the Flash can't keep up with this level of speed")
                 .target(ItemTarget.OPPONENT).effect((ctx, self, t) -> {
@@ -582,11 +573,6 @@ public final class ItemRegistry {
                 // Datapack 30a gives a plain fire_resistance potion; item 64 is the
                 // *long* variant. (They were both handing out LONG before.)
                 .effect((ctx, self, t) -> Mc.givePotion(self, Potions.FIRE_RESISTANCE)).build());
-    }
-
-    // ============================ ITEMS 31-60 ===========================
-
-    private void register31to60() {
         add(DeathSwapItem.of(31, ORANGE, ChatFormatting.GOLD,
                 "Shield yourself from negative items: 3 mins", "Nobody can use any items on you for 3 minutes!")
                 .effect((ctx, self, t) -> shield(ctx, self, 182)).build());
@@ -934,11 +920,6 @@ public final class ItemRegistry {
         add(DeathSwapItem.of(60, LIME, ChatFormatting.RED,
                 "Jumpscare someone", "Life-threatening scariness")
                 .target(ItemTarget.OPPONENT).effect((ctx, self, t) -> jumpscare(ctx, self, t)).build());
-    }
-
-    // ============================ ITEMS 61-90 ===========================
-
-    private void register61to90() {
         add(DeathSwapItem.of(61, RED, ChatFormatting.RED,
                 "Lock someone into a prison", "Experience the prison-industrial complex for yourself")
                 .target(ItemTarget.OPPONENT).effect((ctx, self, t) -> {
@@ -1369,11 +1350,6 @@ public final class ItemRegistry {
                     }
                     announce(ctx.game(), self, "Turned the game into a low-gravity environment", null, ChatFormatting.LIGHT_PURPLE);
                 }).build());
-    }
-
-    // ============================ ITEMS 91-110 ==========================
-
-    private void register91to110() {
         add(DeathSwapItem.of(91, LIME, ChatFormatting.YELLOW,
                 "Take NO fall damage for the next 5 minutes", "A pretty OP item, as the kids say")
                 .effect((ctx, self, t) -> {
