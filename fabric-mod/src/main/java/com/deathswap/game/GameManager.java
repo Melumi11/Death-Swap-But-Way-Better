@@ -255,8 +255,13 @@ public final class GameManager {
         player.setGameMode(GameType.ADVENTURE);
         effects.clearAll(player);
         resetPlayerStats(player);
-        Mc.infiniteEffect(player, MobEffects.REGENERATION, 254);
         Mc.infiniteEffect(player, MobEffects.SATURATION, 254);
+        ItemStack mace = new ItemStack(net.minecraft.world.item.Items.MACE, 1);
+        mace.set(DataComponents.UNBREAKABLE, net.minecraft.util.Unit.INSTANCE);
+        // Use setItem directly so the items land in known slots without going
+        // through the add→drop fallback that the PlayerDropMixin now intercepts.
+        player.getInventory().setItem(0, mace);
+        player.getInventory().setItem(1, new ItemStack(net.minecraft.world.item.Items.WIND_CHARGE, 16));
         teleportToWorldSpawn(player);
     }
 
@@ -301,10 +306,25 @@ public final class GameManager {
         switch (phase) {
             case RUNNING -> tickRunning();
             case ENDING -> tickEnding();
-            case HUB -> {}
+            case HUB -> tickHub();
         }
         if (server.getTickCount() % 20 == 0) {
             updateTabListFooter();
+        }
+    }
+
+    private void tickHub() {
+        if (server.getTickCount() % 20 != 0) return;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            int have = player.getInventory().countItem(net.minecraft.world.item.Items.WIND_CHARGE);
+            if (have < 16) {
+                Mc.give(player, net.minecraft.world.item.Items.WIND_CHARGE, 16 - have);
+            }
+            if (player.getInventory().countItem(net.minecraft.world.item.Items.MACE) == 0) {
+                ItemStack mace = new ItemStack(net.minecraft.world.item.Items.MACE, 1);
+                mace.set(DataComponents.UNBREAKABLE, net.minecraft.util.Unit.INSTANCE);
+                Mc.giveStack(player, mace);
+            }
         }
     }
 
@@ -841,8 +861,13 @@ public final class GameManager {
     /**
      * Re-supply the starter kit when an active participant respawns empty-handed,
      * so a death/relog that wiped their inventory doesn't leave them defenseless.
+     * In hub phase, restore the full hub loadout (mace + wind charges).
      */
     public void onPlayerRespawn(ServerPlayer player) {
+        if (phase == GamePhase.HUB) {
+            sendToHub(player);
+            return;
+        }
         if (phase != GamePhase.RUNNING || !settings.startWithBasicTools) {
             return;
         }
