@@ -13,6 +13,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.core.BlockPos;
@@ -1012,6 +1016,9 @@ public final class GameManager {
         if (restored > 0) {
             DeathSwapMod.LOGGER.info("Rolled back {} block change(s) from the last game.", restored);
         }
+        // Clean up the End: remove everything except the Ender Dragon and End Crystals
+        // so the dimension resets to a playable state for the next game.
+        cleanUpEndEntities();
         broadcast(">> Back to the lobby. Run /deathswap start for another round. <<",
                 ChatFormatting.AQUA);
     }
@@ -1223,6 +1230,21 @@ public final class GameManager {
     public void broadcast(Component component) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             Mc.msg(player, component);
+        }
+    }
+
+    private void cleanUpEndEntities() {
+        ServerLevel end = server.getLevel(Level.END);
+        if (end == null) return;
+        List<Entity> toDiscard = new ArrayList<>();
+        for (Entity entity : end.getAllEntities()) {
+            if (entity instanceof Player) continue;
+            if (entity.getType() == EntityTypes.ENDER_DRAGON) continue;
+            if (entity.getType() == EntityTypes.END_CRYSTAL) continue;
+            toDiscard.add(entity);
+        }
+        for (Entity entity : toDiscard) {
+            entity.discard();
         }
     }
 
