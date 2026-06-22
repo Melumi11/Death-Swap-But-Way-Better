@@ -30,8 +30,10 @@ public abstract class AbstractContainerMenuMixin {
 
         boolean blockClick = false;
 
-        // 1. Check if the clicked slot itself is a powerup slot (hotbar slot 6, 7, or 8)
-        if (slotId >= 0 && slotId < slots.size()) {
+        // 1. Check if the clicked slot itself is a powerup slot (hotbar slot 6, 7, or 8).
+        // Allow THROW (drop) so players can remove the powerup item, but block any other
+        // action that could place/replace an item in the slot.
+        if (containerInput != ContainerInput.THROW && slotId >= 0 && slotId < slots.size()) {
             Slot slot = slots.get(slotId);
             if (slot.container == serverPlayer.getInventory()) {
                 int containerSlot = slot.getContainerSlot();
