@@ -32,6 +32,7 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.protocol.game.ClientboundTabListPacket;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,6 +102,8 @@ public final class GameManager {
     private int endingTicksRemaining;
     /** Pre-game freeze countdown; while > 0 players are blinded and held in place. */
     private int freezeTicksRemaining;
+    /** Ticks elapsed since the current game started (freeze + active play). */
+    private int gameTicksElapsed;
     /** Last spread-cache figures broadcast to chat, so the hub only logs on change. */
     private int lastCacheReadyLogged = -1;
     private int lastCachePendingLogged = -1;
@@ -300,6 +303,9 @@ public final class GameManager {
             case ENDING -> tickEnding();
             case HUB -> {}
         }
+        if (server.getTickCount() % 20 == 0) {
+            updateTabListFooter();
+        }
     }
 
     /**
@@ -423,6 +429,7 @@ public final class GameManager {
             tickFreeze();
             return;
         }
+        gameTicksElapsed++;
         effects.tick(server);
         items.tick();
 
@@ -503,6 +510,39 @@ public final class GameManager {
         if (--swapTicksRemaining <= 0) {
             doSwap();
             resetSwapClock();
+        }
+    }
+
+    private static final java.time.ZoneId TZ_DETROIT = java.time.ZoneId.of("America/Detroit");
+    private static final java.time.ZoneId TZ_LA      = java.time.ZoneId.of("America/Los_Angeles");
+    private static final java.time.ZoneId TZ_TAIWAN  = java.time.ZoneId.of("Asia/Taipei");
+    private static final java.time.format.DateTimeFormatter CLOCK_FMT =
+            java.time.format.DateTimeFormatter.ofPattern("h:mm a");
+
+    private void updateTabListFooter() {
+        String detroit = java.time.ZonedDateTime.now(TZ_DETROIT).format(CLOCK_FMT);
+        String la      = java.time.ZonedDateTime.now(TZ_LA).format(CLOCK_FMT);
+        String taiwan  = java.time.ZonedDateTime.now(TZ_TAIWAN).format(CLOCK_FMT);
+        String clocks  = "Detroit " + detroit + "  |  LA " + la + "  |  Taiwan " + taiwan;
+
+        Component footer;
+        if (phase == GamePhase.RUNNING) {
+            int totalSeconds = gameTicksElapsed / 20;
+            int hours = totalSeconds / 3600;
+            int minutes = (totalSeconds % 3600) / 60;
+            int seconds = totalSeconds % 60;
+            String gameTime = hours > 0
+                    ? String.format("%d:%02d:%02d", hours, minutes, seconds)
+                    : String.format("%d:%02d", minutes, seconds);
+            footer = Component.literal(clocks).withStyle(ChatFormatting.GREEN)
+                    .append(Component.literal("\nGame Duration: " + gameTime).withStyle(ChatFormatting.DARK_GREEN));
+        } else {
+            footer = Component.literal(clocks).withStyle(ChatFormatting.GREEN);
+        }
+
+        ClientboundTabListPacket packet = new ClientboundTabListPacket(Component.empty(), footer);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            player.connection.send(packet);
         }
     }
 
@@ -608,6 +648,7 @@ public final class GameManager {
         assignPermanentNumbers(participants);
 
         phase = GamePhase.RUNNING;
+        gameTicksElapsed = 0;
         scoreboard.start(server, zh());
         updateSidebar();
         // Hold everyone blind and motionless first; the swap and item clocks only
