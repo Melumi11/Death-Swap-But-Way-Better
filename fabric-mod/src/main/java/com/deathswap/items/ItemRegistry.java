@@ -1056,16 +1056,22 @@ public final class ItemRegistry {
                             {14, 14}, {-14, -14}, {-14, 14}, {14, -14},
                             {0, 0}, {0, 0}, {0, 0}};
                     for (double[] d : ring) {
-                        // Find a vertical gap so the parched don't suffocate in walls/hills.
-                        Entity z = Mc.summonRelSafe(t, EntityTypes.PARCHED, d[0], d[1]);
-                        if (z instanceof Monster m) {
-                            m.setCustomName(Component.literal(translate(ctx, "The Việt Cộng")));
-                            m.setPersistenceRequired();
-                            m.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, vietHead.copy());
-                            m.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-                            var atk = m.getAttribute(Attributes.ATTACK_DAMAGE);
-                            if (atk != null) atk.setBaseValue(2.0);
-                        }
+                        // Configure equipment before the entity enters the world so the
+                        // initial spawn packet already carries the correct (bow-free) gear,
+                        // preventing a client-side desync where the client shows a bow even
+                        // though the server has none.
+                        ItemStack headCopy = vietHead.copy();
+                        String name = translate(ctx, "The Việt Cộng");
+                        Mc.summonRelSafe(t, EntityTypes.PARCHED, d[0], d[1], mob -> {
+                            if (mob instanceof Monster m) {
+                                m.setCustomName(Component.literal(name));
+                                m.setPersistenceRequired();
+                                m.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, headCopy);
+                                m.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+                                var atk = m.getAttribute(Attributes.ATTACK_DAMAGE);
+                                if (atk != null) atk.setBaseValue(2.0);
+                            }
+                        });
                     }
                     // A yellow banner with the red/yellow flag design from the datapack.
                     // Place the banner block first so it always appears; the flag

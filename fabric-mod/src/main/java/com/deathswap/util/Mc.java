@@ -59,6 +59,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.Mob;
+import java.util.function.Consumer;
 
 /**
  * Thin wrappers over the vanilla server API. All version-sensitive calls and a
@@ -281,6 +283,45 @@ public final class Mc {
             }
         }
         return summon(level, type, x, baseY, z);
+    }
+
+    /**
+     * Like {@link #summonRelSafe} but runs {@code setup} on the entity after
+     * {@code finalizeSpawn} and before the entity is added to the world. This
+     * ensures the initial spawn packets sent to clients already carry the
+     * configured equipment, preventing a client-side desync where the client
+     * briefly (or permanently) shows the mob's default gear.
+     */
+    public static <T extends Entity> T summonRelSafe(Entity ref, EntityType<T> type,
+                                                     double dx, double dz, Consumer<T> setup) {
+        ServerLevel level = level(ref);
+        Vec3 p = ref.position();
+        double x = p.x + dx, z = p.z + dz;
+        int baseY = (int) Math.floor(p.y);
+        int[] order = {0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6};
+        BlockPos.MutableBlockPos cur = new BlockPos.MutableBlockPos();
+        double safeY = baseY;
+        for (int dy : order) {
+            int y = baseY + dy;
+            cur.set((int) Math.floor(x), y, (int) Math.floor(z));
+            boolean feetClear = !level.getBlockState(cur).isSuffocating(level, cur);
+            cur.setY(y + 1);
+            boolean headClear = !level.getBlockState(cur).isSuffocating(level, cur);
+            if (feetClear && headClear) {
+                safeY = y;
+                break;
+            }
+        }
+        T entity = type.create(level, EntitySpawnReason.COMMAND);
+        if (entity == null) return null;
+        entity.setPos(x, safeY, z);
+        if (entity instanceof Mob mob) {
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(x, safeY, z)),
+                    EntitySpawnReason.COMMAND, null);
+        }
+        setup.accept(entity);
+        level.addFreshEntity(entity);
+        return entity;
     }
 
     // ---- world: blocks ----
