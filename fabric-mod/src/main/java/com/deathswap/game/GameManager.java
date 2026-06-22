@@ -455,7 +455,6 @@ public final class GameManager {
      * elapses, hand control back and start the swap/item clocks.
      */
     private void tickFreeze() {
-        ServerLevel level = server.overworld();
         for (ServerPlayer player : alivePlayers()) {
             PlayerData data = data(player);
             if (data.spawnPos == null) {
@@ -463,9 +462,10 @@ public final class GameManager {
             }
             player.setDeltaMovement(Vec3.ZERO);
             player.fallDistance = 0.0f;
-            Mc.teleportTo(player, level,
-                    data.spawnPos.getX() + 0.5, data.spawnPos.getY(), data.spawnPos.getZ() + 0.5,
-                    data.spawnYaw, player.getXRot());
+            Vec3 spawnVec = new Vec3(data.spawnPos.getX() + 0.5, data.spawnPos.getY(), data.spawnPos.getZ() + 0.5);
+            if (!player.position().closerThan(spawnVec, 0.1)) {
+                Mc.teleport(player, spawnVec.x, spawnVec.y, spawnVec.z);
+            }
         }
         if (--freezeTicksRemaining <= 0) {
             startClocksAfterFreeze();
