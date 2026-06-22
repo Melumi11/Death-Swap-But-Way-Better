@@ -213,7 +213,7 @@ public final class ItemManager {
      * Called from the drop mixin. Returns true if the stack was a death-swap
      * offer item (in which case the real drop is cancelled).
      */
-    public boolean onItemDropped(ServerPlayer player, ItemStack stack) {
+    public boolean onItemTriggered(ServerPlayer player, ItemStack stack) {
         // A dropped filler is a no-op: swallow it so the powerup slot just refills.
         if (isLocked(stack)) {
             return true;

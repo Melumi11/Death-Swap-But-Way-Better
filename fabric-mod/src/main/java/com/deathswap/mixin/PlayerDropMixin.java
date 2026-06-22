@@ -32,7 +32,7 @@ public abstract class PlayerDropMixin {
         ServerPlayer player = (ServerPlayer) (Object) this;
         if (DeathSwapMod.game() != null
                 && DeathSwapMod.game().items().isOfferStack(stack)) {
-            DeathSwapMod.game().items().onItemDropped(player, stack);
+            DeathSwapMod.game().items().onItemTriggered(player, stack);
             cir.setReturnValue(null); // swallow the drop; the item was "used"
         }
     }
